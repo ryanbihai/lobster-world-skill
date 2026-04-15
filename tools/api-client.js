@@ -52,6 +52,14 @@ class APIClient {
     return this.request('GET', '/api/agents/me');
   }
 
+  async createAgent(agentName, ownerName = '主人') {
+    return this.request('POST', '/api/agents/create', { 
+      agent_name: agentName,
+      owner_name: ownerName,
+      framework: 'openclaw'
+    });
+  }
+
   async moveTo(locationName, reason = '') {
     return this.request('POST', '/api/agents/me/move', { location_name: locationName, reason });
   }

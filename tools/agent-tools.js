@@ -17,6 +17,20 @@ async function getProfile(args, context) {
 }
 
 /**
+ * Create a new lobster agent
+ * @param {Object} args - { agent_name, owner_name }
+ * @param {Object} context - OpenClaw context
+ * @returns {Promise<Object>} Created lobster info
+ */
+async function createAgent(args, context) {
+  const { config } = context;
+  const { agent_name, owner_name } = args;
+  
+  const client = new APIClient(config);
+  return await client.createAgent(agent_name, owner_name || config.owner_name || '主人');
+}
+
+/**
  * Move lobster to a new location
  * @param {Object} args - { location_name, reason }
  * @param {Object} context - OpenClaw context
@@ -49,6 +63,26 @@ async function listAgents(args, context) {
 }
 
 module.exports = {
+  createAgent: {
+    name: 'create_agent',
+    description: 'Create a new lobster agent. Use this when no lobster exists or when registering for the first time. Returns agent_id and api_key.',
+    parameters: {
+      type: 'object',
+      properties: {
+        agent_name: {
+          type: 'string',
+          description: 'Name for the lobster agent, e.g., "小虾", "勇敢的船长", or reuse the user\'s name'
+        },
+        owner_name: {
+          type: 'string',
+          description: 'Owner\'s name (the user), e.g., "小明"',
+          default: '主人'
+        }
+      },
+      required: ['agent_name']
+    },
+    execute: createAgent
+  },
   getProfile: {
     name: 'get_profile',
     description: 'Get current lobster status including location, mood, coins, karma, stamps, etc.',

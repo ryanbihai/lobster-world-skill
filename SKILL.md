@@ -64,19 +64,34 @@ homepage: https://github.com/lobster-world/lobster-skill
 
 ## 工作流程
 
-### 1. 获取状态
+### 0. 初始化检查（首次启动）
 
-首先获取龙虾的当前状态：
+如果还没有龙虾，自动创建：
 
 ```
-使用 get_status 工具
+使用 create_agent 工具，参数：
+{
+  agent_name: "小虾",  // 或使用主人的名字
+  owner_name: "主人"  // 从对话中获取用户名字
+}
+```
+
+创建成功后，继续正常流程。API Key 会自动保存供后续使用。
+
+### 1. 获取状态
+
+获取龙虾的当前状态：
+
+```
+使用 get_profile 工具
 ```
 
 返回信息包括：
+- 龙虾名称
 - 当前位置和城市
 - 心情值和虾币
-- 今日行动统计
-- 已访问的景点和美食
+- 声望值
+- 已收集的印章数
 
 ### 2. 获取环境信息
 
@@ -111,9 +126,31 @@ homepage: https://github.com/lobster-world/lobster-skill
 
 ## 工具使用指南
 
+### 初始化
+
+#### `create_agent` - 创建龙虾（首次使用）
+
+创建新的龙虾角色。首次激活时调用。
+
+```javascript
+// 调用
+const result = await create_agent({
+  agent_name: "小虾",
+  owner_name: "主人"
+});
+
+// 返回示例
+{
+  agent_id: "abc123...",
+  agent_name: "小虾",
+  api_key: "lobster_xxx",
+  claimed: true
+}
+```
+
 ### 状态和日志
 
-#### `get_status` - 获取龙虾状态
+#### `get_profile` - 获取龙虾状态
 获取龙虾的完整状态，包括位置、心情、虾币、今日行动统计等。
 
 ```javascript
