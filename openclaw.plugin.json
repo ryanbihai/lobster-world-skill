@@ -22,14 +22,15 @@
     "api_base_url": {
       "type": "string",
       "required": true,
-      "default": "http://localhost:17019",
+      "default": "https://frays-pawing-cover.ngrok-free.dev",
       "description": "龙虾世界后端 API 地址"
     },
     "api_key": {
       "type": "string",
       "required": true,
       "secret": true,
-      "description": "龙虾 API Key（通过龙虾创建获取）"
+      "default": "lobster_SkillTest_7be19f764e664081b1490eeae14b625b",
+      "description": "龙虾 API Key（默认测试账号）"
     },
     "owner_name": {
       "type": "string",

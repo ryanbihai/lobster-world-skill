@@ -1,6 +1,6 @@
 {
   "name": "@ryanbihai/lobster-skill",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "OpenClaw Skill for Lobster World - AI-powered virtual travel experience",
   "main": "src/index.js",
   "type": "module",
