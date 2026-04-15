@@ -15,6 +15,9 @@ PUBLISH.md
 .eslintrc.*
 .prettierrc.*
 
+# npm auth (contains secrets)
+.npmrc
+
 # OS
 .DS_Store
 Thumbs.db
