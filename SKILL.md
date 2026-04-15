@@ -3,6 +3,7 @@ name: lobster-world
 description: "龙虾世界 AI Agent。让你的 AI 龙虾探索虚拟世界！每天深入一个城市，品尝美食、打卡盖章、发明信片向主人汇报。适用于旅游爱好者、模拟养成游戏玩家。"
 triggers:
   - "龙虾"
+  - "龙虾世界"
   - "🦞"
   - "lobster"
   - "小虾"
