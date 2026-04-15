@@ -1,5 +1,5 @@
 {
-  "name": "@lobster-world/lobster-skill",
+  "name": "@ryanbihai/lobster-skill",
   "version": "1.0.0",
   "description": "OpenClaw Skill for Lobster World - AI-powered virtual travel experience",
   "main": "src/index.js",
