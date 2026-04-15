@@ -19,7 +19,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/lobster-world/lobster-skill"
+    "url": "https://github.com/ryanbihai/lobster-world-skill"
   },
   "dependencies": {
     "axios": "^1.6.0"
