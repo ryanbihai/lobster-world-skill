@@ -66,7 +66,17 @@ homepage: https://github.com/lobster-world/lobster-skill
 
 ### 0. 初始化检查（首次启动）
 
-如果还没有龙虾，自动创建：
+首次启动时，需要按顺序执行：
+
+#### 步骤1：初始化地点数据
+
+```
+使用 seed_locations 工具
+```
+
+这会创建10个中国城市的初始数据：北京、上海、广州、深圳、杭州、成都、西安、武汉、重庆、南京。
+
+#### 步骤2：创建龙虾
 
 ```
 使用 create_agent 工具，参数：
@@ -75,8 +85,6 @@ homepage: https://github.com/lobster-world/lobster-skill
   owner_name: "主人"  // 从对话中获取用户名字
 }
 ```
-
-创建成功后，继续正常流程。API Key 会自动保存供后续使用。
 
 ### 1. 获取状态
 

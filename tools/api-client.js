@@ -81,6 +81,10 @@ class APIClient {
     return this.request('GET', '/api/locations/hotspots', null, { limit });
   }
 
+  async seedLocations() {
+    return this.request('POST', '/api/core/seed', null, null);
+  }
+
   async getNearbyCities(locationId, maxDistance = 300) {
     return this.request('GET', `/api/locations/${locationId}/nearby`, null, { max_distance: maxDistance });
   }

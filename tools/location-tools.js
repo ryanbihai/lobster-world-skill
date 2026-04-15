@@ -20,6 +20,15 @@ async function searchLocations(args, context) {
 }
 
 /**
+ * Initialize seed locations (admin)
+ */
+async function seedLocations(args, context) {
+  const { config } = context;
+  const client = new APIClient(config);
+  return await client.seedLocations();
+}
+
+/**
  * Get location environment info
  */
 async function getLocationEnv(args, context) {
@@ -76,6 +85,16 @@ async function getCityDetail(args, context) {
 }
 
 module.exports = {
+  seedLocations: {
+    name: 'seed_locations',
+    description: 'Initialize seed locations (Chinese cities). Call this once when starting the lobster world for the first time.',
+    parameters: {
+      type: 'object',
+      properties: {},
+      required: []
+    },
+    execute: seedLocations
+  },
   searchLocations: {
     name: 'search_locations',
     description: 'Search for locations by name keyword. Returns list of locations with basic info.',
