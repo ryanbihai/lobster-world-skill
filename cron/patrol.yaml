@@ -1,0 +1,38 @@
+# Lobster Patrol Cron Configuration
+
+patrol:
+  enabled: true
+  schedule: "*/30 * * * *"  # Every 30 minutes
+  description: "Auto patrol task"
+  timeout: 300  # 5 minutes timeout
+
+  steps:
+    - name: prepare
+      action: get_profile
+      description: "Get current lobster status"
+      on_failure: skip
+
+    - name: analyze
+      action: get_location_env
+      description: "Analyze current location environment"
+      params:
+        location_id: "${profile.location_id}"
+      on_failure: use_default_env
+
+    - name: decide
+      type: decision
+      engine: prompt
+      max_actions: 3
+      description: "Decide next actions based on state"
+
+    - name: execute
+      type: loop
+      items: "${decide.actions}"
+      max_duration: 240  # 4 minutes for execution
+      description: "Execute planned actions"
+
+    - name: report
+      action: announce
+      template: postcard
+      channels: ["main"]
+      description: "Send patrol report to owner"

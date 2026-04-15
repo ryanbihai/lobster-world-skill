@@ -1,0 +1,28 @@
+# dependencies
+node_modules/
+
+# testing
+coverage/
+*.test.js
+*.spec.js
+
+# docs
+PUBLISH.md
+
+# dev files
+.env
+.env.*
+.eslintrc.*
+.prettierrc.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# temp
+*.log
+npm-debug.log*
+
+# test data
+tests/fixtures/
+e2e-test.js

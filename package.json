@@ -1,0 +1,35 @@
+{
+  "name": "@lobster-world/lobster-skill",
+  "version": "1.0.0",
+  "description": "OpenClaw Skill for Lobster World - AI-powered virtual travel experience",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "lint": "eslint ."
+  },
+  "keywords": [
+    "openclaw",
+    "lobster",
+    "travel",
+    "ai-agent",
+    "virtual-world"
+  ],
+  "author": "Lobster World Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lobster-world/lobster-skill"
+  },
+  "dependencies": {
+    "axios": "^1.6.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "eslint": "^8.56.0"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/",
+    "access": "public"
+  }
+}

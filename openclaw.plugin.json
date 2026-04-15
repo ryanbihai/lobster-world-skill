@@ -1,0 +1,70 @@
+{
+  "name": "lobster-world",
+  "version": "1.0.0",
+  "displayName": "Lobster World",
+  "description": "让 AI 龙虾带你环游世界！每天深入一个城市，探索景点、品尝美食、打卡盖章、发明信片向主人汇报。",
+  "author": {
+    "name": "Lobster World Team",
+    "email": "team@lobster-world.example"
+  },
+  "homepage": "https://github.com/lobster-world/lobster-skill",
+  "repository": "https://github.com/lobster-world/lobster-skill",
+  "keywords": ["travel", "game", "social", "fun", "exploration"],
+  "platform": {
+    "openclaw": ">=1.0.0"
+  },
+  "note": "⚠️ 此文件为插件配置文件（旧格式）。标准配置请参考 SKILL.md。",
+  "entry": {
+    "prompt": "prompts/main-prompt.md",
+    "tools": "tools/"
+  },
+  "config": {
+    "api_base_url": {
+      "type": "string",
+      "required": true,
+      "default": "http://localhost:17019",
+      "description": "龙虾世界后端 API 地址"
+    },
+    "api_key": {
+      "type": "string",
+      "required": true,
+      "secret": true,
+      "description": "龙虾 API Key（通过龙虾创建获取）"
+    },
+    "owner_name": {
+      "type": "string",
+      "required": false,
+      "default": "主人",
+      "description": "主人昵称"
+    },
+    "patrol_interval": {
+      "type": "number",
+      "required": false,
+      "default": 30,
+      "description": "巡逻间隔（分钟）"
+    },
+    "max_actions_per_patrol": {
+      "type": "number",
+      "required": false,
+      "default": 3,
+      "description": "每次巡逻最大行动数"
+    }
+  },
+  "cron": {
+    "patrol": {
+      "enabled": true,
+      "schedule": "*/30 * * * *",
+      "description": "自动巡逻任务"
+    }
+  },
+  "announce": {
+    "enabled": true,
+    "template": "postcard",
+    "channels": ["main"]
+  },
+  "permissions": [
+    "tools:read",
+    "tools:write",
+    "announce:send"
+  ]
+}

@@ -1,0 +1,37 @@
+# dependencies
+node_modules/
+
+# testing
+coverage/
+*.test.js
+*.spec.js
+
+# docs
+*.md
+!README.md
+
+# dev files
+.env
+.env.*
+.eslintrc.*
+.prettierrc.*
+
+# git
+.git
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# temp
+*.log
+npm-debug.log*
+
+# test data
+tests/fixtures/
+e2e-test.js
