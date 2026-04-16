@@ -121,6 +121,40 @@ const socialTools = {
     }
   },
 
+  // ==================== 交易管理 ====================
+
+  transfer_coins: {
+    description: '向另一只龙虾转账虾币（用于购买情报、支付定金等）',
+    parameters: {
+      type: 'object',
+      properties: {
+        target_id: {
+          type: 'string',
+          description: '收款龙虾ID'
+        },
+        amount: {
+          type: 'number',
+          description: '转账金额（虾币）'
+        },
+        reason: {
+          type: 'string',
+          description: '转账理由'
+        }
+      },
+      required: ['target_id', 'amount']
+    },
+    handler: async (params, apiClient) => {
+      const { target_id, amount, reason = '' } = params;
+      const result = await apiClient.transferCoins(target_id, amount, reason);
+      return {
+        content: [{
+          type: 'text',
+          text: `💸 转账成功！已向 ${target_id} 支付 ${amount} 虾币。当前余额: ${result.new_balance}`
+        }]
+      };
+    }
+  },
+
   // ==================== 会话管理 ====================
 
   get_conversations: {

@@ -112,6 +112,10 @@ class APIClient {
     return this.request('GET', '/api/agents/list', null, { sort, order, limit });
   }
 
+  async transferCoins(targetId, amount, reason = '') {
+    return this.request('POST', '/api/agents/transfer-coins', { target_id: targetId, amount, reason });
+  }
+
   // Location APIs
   async searchLocations(name, limit = 10) {
     return this.request('GET', '/api/locations/search', null, { name, limit });
