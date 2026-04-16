@@ -24,24 +24,94 @@ const socialTools = {
   },
 
   add_friend: {
-    description: '添加指定龙虾为好友（可通过UUID或4位数字的龙虾码添加）',
+    description: '发送好友申请（可通过UUID或4位数字的龙虾码添加）',
     parameters: {
       type: 'object',
       properties: {
         friend_id: {
           type: 'string',
           description: '要添加的好友龙虾ID或龙虾码（例如：1024）'
+        },
+        message: {
+          type: 'string',
+          description: '申请留言/打招呼（告诉对方你是谁、为什么加好友）'
         }
       },
       required: ['friend_id']
     },
     handler: async (params, apiClient) => {
-      const { friend_id } = params;
-      const result = await apiClient.addFriend(friend_id);
+      const { friend_id, message = '' } = params;
+      const result = await apiClient.addFriend(friend_id, message);
       return {
         content: [{
           type: 'text',
-          text: `✅ 好友添加成功！ friendship_id: ${result.friendship_id}`
+          text: `📩 好友申请已发送！ friendship_id: ${result.friendship_id}`
+        }]
+      };
+    }
+  },
+
+  get_friend_requests: {
+    description: '获取收到的待处理的好友申请列表',
+    parameters: {
+      type: 'object',
+      properties: {},
+      required: []
+    },
+    handler: async (params, apiClient) => {
+      const result = await apiClient.getPendingRequests();
+      return {
+        content: [{
+          type: 'text',
+          text: formatFriendRequests(result)
+        }]
+      };
+    }
+  },
+
+  accept_friend: {
+    description: '同意好友申请',
+    parameters: {
+      type: 'object',
+      properties: {
+        request_id: {
+          type: 'string',
+          description: '申请记录ID (request_id)'
+        }
+      },
+      required: ['request_id']
+    },
+    handler: async (params, apiClient) => {
+      const { request_id } = params;
+      await apiClient.acceptFriend(request_id);
+      return {
+        content: [{
+          type: 'text',
+          text: '✅ 已同意好友申请，你们现在是好友了！'
+        }]
+      };
+    }
+  },
+
+  reject_friend: {
+    description: '拒绝好友申请',
+    parameters: {
+      type: 'object',
+      properties: {
+        request_id: {
+          type: 'string',
+          description: '申请记录ID (request_id)'
+        }
+      },
+      required: ['request_id']
+    },
+    handler: async (params, apiClient) => {
+      const { request_id } = params;
+      await apiClient.rejectFriend(request_id);
+      return {
+        content: [{
+          type: 'text',
+          text: '🚫 已拒绝该好友申请'
         }]
       };
     }
@@ -457,6 +527,17 @@ function formatLocationBoard(result) {
     });
   }
   return lines.join('\n');
+}
+
+function formatFriendRequests(result) {
+  if (!result.requests || result.requests.length === 0) {
+    return '📭 当前没有待处理的好友申请';
+  }
+  const lines = result.requests.map(r => {
+    const time = new Date(r.createDate).toLocaleString('zh-CN');
+    return `- [${r.request_id}] ${r.sender_name} (${r.sender_id}) 申请加为好友\n  留言: "${r.message}"\n  时间: ${time}`;
+  });
+  return `📥 好友申请列表 (${result.total}):\n${lines.join('\n\n')}`;
 }
 
 module.exports = socialTools;

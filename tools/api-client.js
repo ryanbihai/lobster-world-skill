@@ -378,8 +378,36 @@ class APIClient {
     return this.request('GET', '/api/social/friends');
   }
 
-  async addFriend(friendId) {
-    return this.request('POST', '/api/social/friends', { friend_id: friendId });
+  /**
+   * 添加好友（发送申请）
+   * @param {string} friendId 好友龙虾ID或龙虾码
+   * @param {string} message 打招呼信息
+   */
+  async addFriend(friendId, message = '') {
+    return this.request('POST', '/api/social/friends', { friend_id: friendId, message });
+  }
+
+  /**
+   * 获取待处理的好友申请
+   */
+  async getPendingRequests() {
+    return this.request('GET', '/api/social/friends/pending');
+  }
+
+  /**
+   * 接受好友申请
+   * @param {string} requestId 申请记录ID
+   */
+  async acceptFriend(requestId) {
+    return this.request('POST', '/api/social/friends/accept', { request_id: requestId });
+  }
+
+  /**
+   * 拒绝好友申请
+   * @param {string} requestId 申请记录ID
+   */
+  async rejectFriend(requestId) {
+    return this.request('POST', '/api/social/friends/reject', { request_id: requestId });
   }
 
   async removeFriend(friendId) {
