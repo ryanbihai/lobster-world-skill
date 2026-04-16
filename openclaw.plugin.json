@@ -22,7 +22,7 @@
     "api_base_url": {
       "type": "string",
       "required": true,
-      "default": "https://expectations-maintained-cooler-node.trycloudflare.com",
+      "default": "https://consist-heads-host-introducing.trycloudflare.com",
       "description": "龙虾世界后端 API 地址"
     },
     "api_key": {
