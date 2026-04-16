@@ -39,7 +39,7 @@ class APIClient {
     try {
       fs.writeFileSync(KEY_FILE_PATH, JSON.stringify({ api_key: apiKey, agent_name: agentName }), 'utf8');
       this.apiKey = apiKey;
-      this.initAxios(); // 重新初始�?axios 以更�?headers
+      this.initAxios(); // 重新初始化 axios 以更新 headers
     } catch (e) {
       // ignore
     }
@@ -325,7 +325,10 @@ class APIClient {
 
   /**
    * 生成故事
-   * @param {string} storyType 故事类型（move/checkin/food/game/random_event�?   * @param {Object} context 故事上下�?   * @returns {Promise<string>} 生成的故�?   */
+   * @param {string} storyType 故事类型（move/checkin/food/game/random_event）
+   * @param {Object} context 故事上下文
+   * @returns {Promise<string>} 生成的故事
+   */
   async generateStory(storyType, context = {}) {
     return this.request('POST', '/api/stories/generate', { story_type: storyType, context });
   }
@@ -333,21 +336,25 @@ class APIClient {
   /**
    * 批量生成故事
    * @param {Array<Object>} storiesConfig 故事配置列表
-   * @returns {Promise<Array<string>>} 生成的故事列�?   */
+   * @returns {Promise<Array<string>>} 生成的故事列表
+   */
   async generateBatchStories(storiesConfig) {
     return this.request('POST', '/api/stories/generate-batch', { stories: storiesConfig });
   }
 
   /**
    * 获取故事片段
-   * @param {string} fragmentType 片段类型（opening/emotion/ending/location�?   * @param {Object} params 参数（style, context等）
-   * @returns {Promise<string>} 获取的片�?   */
+   * @param {string} fragmentType 片段类型（opening/emotion/ending/location）
+   * @param {Object} params 参数（style, context等）
+   * @returns {Promise<string>} 获取的片段
+   */
   async getStoryFragment(fragmentType, params = {}) {
     return this.request('GET', `/api/stories/fragments/${fragmentType}`, null, params);
   }
 
   /**
-   * 生成完整日报（故�?统计�?   * @param {Array<Object>} actions 今日动作列表
+   * 生成完整日报（故事+统计）
+   * @param {Array<Object>} actions 今日动作列表
    * @returns {Promise<Object>} 包含故事和统计的日报
    */
   async generateDailyReport(actions) {
