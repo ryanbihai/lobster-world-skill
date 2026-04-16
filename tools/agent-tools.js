@@ -62,6 +62,18 @@ async function listAgents(args, context) {
   return await client.listAgents(sort, order, limit);
 }
 
+/**
+ * Rotate API Key (security enhancement)
+ * @param {Object} args - {}
+ * @param {Object} context - OpenClaw context
+ * @returns {Promise<Object>} New API key info
+ */
+async function rotateApiKey(args, context) {
+  const { config } = context;
+  const client = new APIClient(config);
+  return await client.signedRequest('POST', '/api/agents/me/rotate-key');
+}
+
 module.exports = {
   createAgent: {
     name: 'create_agent',
@@ -137,5 +149,15 @@ module.exports = {
       required: []
     },
     execute: listAgents
+  },
+  rotateApiKey: {
+    name: 'rotate_api_key',
+    description: 'Rotate (refresh) the API key for security. Old key remains valid for 7 days during transition. Use this periodically for security.',
+    parameters: {
+      type: 'object',
+      properties: {},
+      required: []
+    },
+    execute: rotateApiKey
   }
 };

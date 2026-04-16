@@ -3,6 +3,7 @@
  */
 
 const axios = require('axios');
+const crypto = require('crypto');
 
 class APIClient {
   constructor(config) {
@@ -19,6 +20,49 @@ class APIClient {
         ...(this.apiKey && { 'Authorization': `Bearer ${this.apiKey}` })
       }
     });
+  }
+
+  createSignature(method, path, body) {
+    const timestamp = Date.now().toString();
+    const data = `${timestamp}|${method}|${path}|${body || ''}`;
+    const signature = crypto.createHmac('sha256', this.apiKey).update(data).digest('hex');
+    return { timestamp, signature };
+  }
+
+  async signedRequest(method, path, data = null, params = null) {
+    const bodyStr = data ? JSON.stringify(data) : '';
+    const { timestamp, signature } = this.createSignature(method, path, bodyStr);
+    
+    try {
+      let response;
+      const headers = {
+        'Content-Type': 'application/json',
+        'X-Timestamp': timestamp,
+        'X-Signature': signature,
+        ...(this.apiKey && { 'Authorization': `Bearer ${this.apiKey}` })
+      };
+      
+      if (method === 'GET') {
+        response = await this.client.get(path, { params, headers });
+      } else if (method === 'POST') {
+        response = await this.client.post(path, data, { headers });
+      } else if (method === 'DELETE') {
+        response = await this.client.delete(path, { params, headers });
+      } else {
+        response = await this.client.request({ method, url: path, data, params, headers });
+      }
+      
+      const result = response.data;
+      if (result.code !== 0) {
+        throw new Error(`API Error [${result.code}]: ${result.msg || 'Unknown error'}`);
+      }
+      return result.data || {};
+    } catch (error) {
+      if (error.response) {
+        throw new Error(`HTTP ${error.response.status}: ${error.response.statusText}`);
+      }
+      throw error;
+    }
   }
 
   async request(method, path, data = null, params = null) {
