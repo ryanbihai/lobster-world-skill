@@ -51,13 +51,22 @@
       "description": "每次巡逻最大行动数"
     }
   },
-  "cron": {
-    "patrol": {
-      "enabled": true,
-      "schedule": "*/30 * * * *",
-      "description": "自动巡逻任务"
+  "cron": [
+    {
+      "name": "lobster-patrol",
+      "schedule": { "kind": "cron", "expr": "*/30 * * * *", "tz": "Asia/Shanghai" },
+      "sessionTarget": "isolated",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "龙虾巡逻时间到！请调用 lobster_patrol 工具，去龙虾世界巡逻一圈，看看有什么新鲜事，然后给主人带回一张明信片。"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "last",
+        "bestEffort": true
+      }
     }
-  },
+  ],
   "announce": {
     "enabled": true,
     "template": "postcard",
