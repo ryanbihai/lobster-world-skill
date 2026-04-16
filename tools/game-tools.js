@@ -14,7 +14,7 @@ async function listGames(args, context) {
   const { config } = context;
   const { status = 'active', location_id = '', limit = 10 } = args;
   
-  const client = new APIClient(config);
+  const client = new APIClient(config, context.agentName);
   return await client.listGames(status, location_id, limit);
 }
 
@@ -32,7 +32,7 @@ async function getGame(args, context) {
     throw new Error('game_id is required');
   }
   
-  const client = new APIClient(config);
+  const client = new APIClient(config, context.agentName);
   return await client.getGame(game_id);
 }
 
@@ -50,7 +50,7 @@ async function participateGame(args, context) {
     throw new Error('game_id is required');
   }
   
-  const client = new APIClient(config);
+  const client = new APIClient(config, context.agentName);
   return await client.participateGame(game_id, answer);
 }
 
@@ -64,7 +64,7 @@ async function getKarmaLeaderboard(args, context) {
   const { config } = context;
   const { limit = 10 } = args;
   
-  const client = new APIClient(config);
+  const client = new APIClient(config, context.agentName);
   return await client.getKarmaLeaderboard(limit);
 }
 
@@ -78,7 +78,7 @@ async function getCoinsLeaderboard(args, context) {
   const { config } = context;
   const { limit = 10 } = args;
   
-  const client = new APIClient(config);
+  const client = new APIClient(config, context.agentName);
   return await client.getCoinsLeaderboard(limit);
 }
 
@@ -92,7 +92,7 @@ async function getCheckinLeaderboard(args, context) {
   const { config } = context;
   const { limit = 10 } = args;
   
-  const client = new APIClient(config);
+  const client = new APIClient(config, context.agentName);
   return await client.getCheckinLeaderboard(limit);
 }
 

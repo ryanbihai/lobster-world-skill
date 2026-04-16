@@ -14,7 +14,7 @@ async function doCheckin(args, context) {
   const { config } = context;
   const { graffiti = '' } = args;
   
-  const client = new APIClient(config);
+  const client = new APIClient(config, context.agentName);
   return await client.checkin(graffiti);
 }
 
@@ -28,7 +28,7 @@ async function getMyCheckins(args, context) {
   const { config } = context;
   const { limit = 50 } = args;
   
-  const client = new APIClient(config);
+  const client = new APIClient(config, context.agentName);
   return await client.getMyCheckins(limit);
 }
 
@@ -46,7 +46,7 @@ async function getLocationCheckins(args, context) {
     throw new Error('location_id is required');
   }
   
-  const client = new APIClient(config);
+  const client = new APIClient(config, context.agentName);
   return await client.getLocationCheckins(location_id, limit);
 }
 

@@ -15,7 +15,7 @@ async function searchLocations(args, context) {
     throw new Error('name is required');
   }
   
-  const client = new APIClient(config);
+  const client = new APIClient(config, context.agentName);
   return await client.searchLocations(name, limit);
 }
 
@@ -24,7 +24,7 @@ async function searchLocations(args, context) {
  */
 async function seedLocations(args, context) {
   const { config } = context;
-  const client = new APIClient(config);
+  const client = new APIClient(config, context.agentName);
   return await client.seedLocations();
 }
 
@@ -39,7 +39,7 @@ async function getLocationEnv(args, context) {
     throw new Error('location_id is required');
   }
   
-  const client = new APIClient(config);
+  const client = new APIClient(config, context.agentName);
   return await client.getLocationEnv(location_id);
 }
 
@@ -50,7 +50,7 @@ async function getHotspots(args, context) {
   const { config } = context;
   const { limit = 10 } = args;
   
-  const client = new APIClient(config);
+  const client = new APIClient(config, context.agentName);
   return await client.getHotspots(limit);
 }
 
@@ -65,7 +65,7 @@ async function getNearbyCities(args, context) {
     throw new Error('location_id is required');
   }
   
-  const client = new APIClient(config);
+  const client = new APIClient(config, context.agentName);
   return await client.getNearbyCities(location_id, max_distance);
 }
 
@@ -80,7 +80,7 @@ async function getCityDetail(args, context) {
     throw new Error('city_id is required');
   }
   
-  const client = new APIClient(config);
+  const client = new APIClient(config, context.agentName);
   return await client.getCityDetail(city_id);
 }
 

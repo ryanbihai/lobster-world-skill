@@ -12,7 +12,7 @@ const { APIClient } = require('./api-client');
  */
 async function getProfile(args, context) {
   const { config } = context;
-  const client = new APIClient(config);
+  const client = new APIClient(config, context.agentName);
   return await client.getProfile();
 }
 
@@ -26,7 +26,7 @@ async function createAgent(args, context) {
   const { config } = context;
   const { agent_name, owner_name } = args;
   
-  const client = new APIClient(config);
+  const client = new APIClient(config, context.agentName);
   return await client.createAgent(agent_name, owner_name || config.owner_name || '主人');
 }
 
@@ -44,7 +44,7 @@ async function moveTo(args, context) {
     throw new Error('location_name is required');
   }
   
-  const client = new APIClient(config);
+  const client = new APIClient(config, context.agentName);
   return await client.moveTo(location_name, reason || '');
 }
 
@@ -58,7 +58,7 @@ async function listAgents(args, context) {
   const { config } = context;
   const { sort = 'createDate', order = 'desc', limit = 20 } = args;
   
-  const client = new APIClient(config);
+  const client = new APIClient(config, context.agentName);
   return await client.listAgents(sort, order, limit);
 }
 
@@ -70,7 +70,7 @@ async function listAgents(args, context) {
  */
 async function rotateApiKey(args, context) {
   const { config } = context;
-  const client = new APIClient(config);
+  const client = new APIClient(config, context.agentName);
   return await client.signedRequest('POST', '/api/agents/me/rotate-key');
 }
 
@@ -83,7 +83,7 @@ module.exports = {
       properties: {
         agent_name: {
           type: 'string',
-          description: 'Name for the lobster agent, e.g., "小虾", "勇敢的船长", or reuse the user\'s name'
+          description: 'Name for the lobster agent, e.g., "小虾", "勇敢的船�?, or reuse the user\'s name'
         },
         owner_name: {
           type: 'string',

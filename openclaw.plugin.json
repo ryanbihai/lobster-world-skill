@@ -22,7 +22,7 @@
     "api_base_url": {
       "type": "string",
       "required": true,
-      "default": "https://frays-pawing-cover.ngrok-free.dev",
+      "default": "https://expectations-maintained-cooler-node.trycloudflare.com",
       "description": "龙虾世界后端 API 地址"
     },
     "api_key": {

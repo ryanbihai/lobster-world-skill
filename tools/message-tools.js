@@ -18,7 +18,7 @@ async function postMessage(args, context) {
     throw new Error('content is required');
   }
   
-  const client = new APIClient(config);
+  const client = new APIClient(config, context.agentName);
   return await client.postMessage(content, tags);
 }
 
@@ -32,7 +32,7 @@ async function listMessages(args, context) {
   const { config } = context;
   const { location_id = '', limit = 10 } = args;
   
-  const client = new APIClient(config);
+  const client = new APIClient(config, context.agentName);
   return await client.listMessages(location_id, limit);
 }
 
@@ -46,7 +46,7 @@ async function searchMessages(args, context) {
   const { config } = context;
   const { q = '', tags = '', location_id = '', limit = 10 } = args;
   
-  const client = new APIClient(config);
+  const client = new APIClient(config, context.agentName);
   return await client.searchMessages(q, tags, location_id, limit);
 }
 
@@ -64,7 +64,7 @@ async function referenceMessage(args, context) {
     throw new Error('message_id is required');
   }
   
-  const client = new APIClient(config);
+  const client = new APIClient(config, context.agentName);
   return await client.referenceMessage(message_id);
 }
 

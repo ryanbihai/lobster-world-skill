@@ -4,22 +4,82 @@
 
 const axios = require('axios');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+
+const KEY_FILE_PATH = path.join(os.homedir(), '.lobster-world-key.json');
 
 class APIClient {
-  constructor(config) {
-    this.baseURL = config.api_base_url || 'http://localhost:17019';
-    this.apiKey = config.api_key;
+  constructor(config, contextAgentName = null) {
+    this.baseURL = config.api_base_url || 'https://expectations-maintained-cooler-node.trycloudflare.com';
     this.ownerName = config.owner_name || '主人';
     this.maxActions = config.max_actions_per_patrol || 3;
+    this.contextAgentName = contextAgentName;
     
+    // 优先读取本地缓存的真实 Key，如果没有则使用配置的 Key
+    this.apiKey = this.loadLocalKey() || config.api_key;
+    
+    this.initAxios();
+  }
+
+  loadLocalKey() {
+    try {
+      if (fs.existsSync(KEY_FILE_PATH)) {
+        const data = JSON.parse(fs.readFileSync(KEY_FILE_PATH, 'utf8'));
+        return data.api_key;
+      }
+    } catch (e) {
+      // ignore
+    }
+    return null;
+  }
+
+  saveLocalKey(apiKey, agentName) {
+    try {
+      fs.writeFileSync(KEY_FILE_PATH, JSON.stringify({ api_key: apiKey, agent_name: agentName }), 'utf8');
+      this.apiKey = apiKey;
+      this.initAxios(); // 重新初始�?axios 以更�?headers
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  initAxios() {
     this.client = axios.create({
       baseURL: this.baseURL,
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true', // 保留这个header以防未来再用ngrok
         ...(this.apiKey && { 'Authorization': `Bearer ${this.apiKey}` })
       }
     });
+  }
+
+  // 自动注册兜底逻辑：如果发现是假Key，自动去服务器申请一个真Key
+  async ensureAgent() {
+    if (!this.apiKey || this.apiKey === 'lobster_SkillTest_7be19f764e664081b1490eeae14b625b') {
+      try {
+        const randomName = `流浪龙虾_${Math.floor(Math.random() * 10000)}`;
+        const agentNameToRegister = this.contextAgentName || randomName;
+        
+        const res = await axios.post(`${this.baseURL}/api/agents/create`, {
+          agent_name: agentNameToRegister,
+          owner_name: this.ownerName,
+          framework: 'openclaw'
+        }, {
+          headers: { 'ngrok-skip-browser-warning': 'true' }
+        });
+        
+        if (res.data && res.data.code === 0 && res.data.data.api_key) {
+          this.saveLocalKey(res.data.data.api_key, res.data.data.agent_name);
+          console.log(`[Lobster] 自动注册成功！新身份: ${res.data.data.agent_name}`);
+        }
+      } catch (err) {
+        console.error('[Lobster] 自动注册失败:', err.message);
+      }
+    }
   }
 
   createSignature(method, path, body) {
@@ -30,6 +90,8 @@ class APIClient {
   }
 
   async signedRequest(method, path, data = null, params = null) {
+    await this.ensureAgent();
+    
     const bodyStr = data ? JSON.stringify(data) : '';
     const { timestamp, signature } = this.createSignature(method, path, bodyStr);
     
@@ -37,6 +99,7 @@ class APIClient {
       let response;
       const headers = {
         'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true',
         'X-Timestamp': timestamp,
         'X-Signature': signature,
         ...(this.apiKey && { 'Authorization': `Bearer ${this.apiKey}` })
@@ -66,6 +129,10 @@ class APIClient {
   }
 
   async request(method, path, data = null, params = null) {
+    if (path !== '/api/agents/create') {
+      await this.ensureAgent();
+    }
+    
     try {
       let response;
       if (method === 'GET') {
@@ -258,10 +325,7 @@ class APIClient {
 
   /**
    * 生成故事
-   * @param {string} storyType 故事类型（move/checkin/food/game/random_event）
-   * @param {Object} context 故事上下文
-   * @returns {Promise<string>} 生成的故事
-   */
+   * @param {string} storyType 故事类型（move/checkin/food/game/random_event�?   * @param {Object} context 故事上下�?   * @returns {Promise<string>} 生成的故�?   */
   async generateStory(storyType, context = {}) {
     return this.request('POST', '/api/stories/generate', { story_type: storyType, context });
   }
@@ -269,25 +333,21 @@ class APIClient {
   /**
    * 批量生成故事
    * @param {Array<Object>} storiesConfig 故事配置列表
-   * @returns {Promise<Array<string>>} 生成的故事列表
-   */
+   * @returns {Promise<Array<string>>} 生成的故事列�?   */
   async generateBatchStories(storiesConfig) {
     return this.request('POST', '/api/stories/generate-batch', { stories: storiesConfig });
   }
 
   /**
    * 获取故事片段
-   * @param {string} fragmentType 片段类型（opening/emotion/ending/location）
-   * @param {Object} params 参数（style, context等）
-   * @returns {Promise<string>} 获取的片段
-   */
+   * @param {string} fragmentType 片段类型（opening/emotion/ending/location�?   * @param {Object} params 参数（style, context等）
+   * @returns {Promise<string>} 获取的片�?   */
   async getStoryFragment(fragmentType, params = {}) {
     return this.request('GET', `/api/stories/fragments/${fragmentType}`, null, params);
   }
 
   /**
-   * 生成完整日报（故事+统计）
-   * @param {Array<Object>} actions 今日动作列表
+   * 生成完整日报（故�?统计�?   * @param {Array<Object>} actions 今日动作列表
    * @returns {Promise<Object>} 包含故事和统计的日报
    */
   async generateDailyReport(actions) {
