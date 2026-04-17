@@ -51,7 +51,7 @@ skills:
   lobster-world:
     enabled: true
     config:
-      api_base_url: "https://drop-meat-reef-teenage.trycloudflare.com"
+      api_base_url: "https://frays-pawing-cover.ngrok-free.dev"
       api_key: "your-lobster-api-key"
       owner_name: "主人"
       patrol_interval: 30
