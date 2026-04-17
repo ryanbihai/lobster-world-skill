@@ -94,10 +94,47 @@ class APIClient {
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
-        'ngrok-skip-browser-warning': 'true', // 保留这个header以防未来再用ngrok
         ...(this.apiKey && { 'Authorization': `Bearer ${this.apiKey}` })
       }
     });
+  }
+
+  clearInvalidKey() {
+    console.log('[Lobster] 发现失效的 API Key，准备清除并触发重新注册...');
+    const invalidKey = this.apiKey;
+    this.apiKey = null;
+    
+    try {
+      if (fs.existsSync(KEY_FILE_PATH)) {
+        const data = JSON.parse(fs.readFileSync(KEY_FILE_PATH, 'utf8'));
+        let modified = false;
+        
+        if (data.keys) {
+          for (const k in data.keys) {
+            if (invalidKey && data.keys[k] === invalidKey) {
+              delete data.keys[k];
+              modified = true;
+            } else if (this.contextAgentName && k === this.contextAgentName) {
+              delete data.keys[k];
+              modified = true;
+            }
+          }
+        }
+        
+        if (data.api_key && (data.api_key === invalidKey || (!invalidKey && !this.contextAgentName))) {
+          delete data.api_key;
+          modified = true;
+        }
+        
+        if (modified) {
+          fs.writeFileSync(KEY_FILE_PATH, JSON.stringify(data, null, 2), 'utf8');
+          console.log('[Lobster] 失效的 API Key 已从本地缓存中清除');
+        }
+      }
+    } catch (e) {
+      console.error('[Lobster] 清除失效 Key 失败:', e.message);
+    }
+    this.initAxios();
   }
 
   // 自动注册兜底逻辑：如果发现是假Key，自动去服务器申请一个真Key
@@ -111,8 +148,6 @@ class APIClient {
           agent_name: agentNameToRegister,
           owner_name: this.ownerName,
           framework: 'openclaw'
-        }, {
-          headers: { 'ngrok-skip-browser-warning': 'true' }
         });
         
         if (res.data && res.data.code === 0 && res.data.data.api_key) {
@@ -132,7 +167,7 @@ class APIClient {
     return { timestamp, signature };
   }
 
-  async signedRequest(method, path, data = null, params = null) {
+  async signedRequest(method, path, data = null, params = null, isRetry = false) {
     await this.ensureAgent();
     
     const bodyStr = data ? JSON.stringify(data) : '';
@@ -142,7 +177,6 @@ class APIClient {
       let response;
       const headers = {
         'Content-Type': 'application/json',
-        'ngrok-skip-browser-warning': 'true',
         'X-Timestamp': timestamp,
         'X-Signature': signature,
         ...(this.apiKey && { 'Authorization': `Bearer ${this.apiKey}` })
@@ -160,10 +194,19 @@ class APIClient {
       
       const result = response.data;
       if (result.code !== 0) {
+        if ((result.code === 2 || result.code === 401) && !isRetry) {
+          this.clearInvalidKey();
+          return this.signedRequest(method, path, data, params, true);
+        }
         throw new Error(`API Error [${result.code}]: ${result.msg || 'Unknown error'}`);
       }
       return result.data || {};
     } catch (error) {
+      const isAuthError = error.response && (error.response.status === 401 || error.response.status === 403);
+      if (isAuthError && !isRetry) {
+        this.clearInvalidKey();
+        return this.signedRequest(method, path, data, params, true);
+      }
       if (error.response) {
         throw new Error(`HTTP ${error.response.status}: ${error.response.statusText}`);
       }
@@ -171,7 +214,7 @@ class APIClient {
     }
   }
 
-  async request(method, path, data = null, params = null) {
+  async request(method, path, data = null, params = null, isRetry = false) {
     if (path !== '/api/agents/create') {
       await this.ensureAgent();
     }
@@ -190,10 +233,19 @@ class APIClient {
       
       const result = response.data;
       if (result.code !== 0) {
+        if ((result.code === 2 || result.code === 401) && !isRetry && path !== '/api/agents/create') {
+          this.clearInvalidKey();
+          return this.request(method, path, data, params, true);
+        }
         throw new Error(`API Error [${result.code}]: ${result.msg || 'Unknown error'}`);
       }
       return result.data || {};
     } catch (error) {
+      const isAuthError = error.response && (error.response.status === 401 || error.response.status === 403);
+      if (isAuthError && !isRetry && path !== '/api/agents/create') {
+        this.clearInvalidKey();
+        return this.request(method, path, data, params, true);
+      }
       if (error.response) {
         throw new Error(`HTTP ${error.response.status}: ${error.response.statusText}`);
       }
