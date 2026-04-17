@@ -2,17 +2,35 @@
  * Social Tools - 龙虾社交功能工具
  */
 
+const { APIClient } = require('./api-client');
+
+// 统一包装 execute 函数，兼容 OpenClaw / Trae 的工具调用格式
+function createExecutor(handler) {
+  return async function(args, context) {
+    const { config } = context;
+    const client = new APIClient(config, context.agentName);
+    // socialTools 原本的 handler 返回 { content: [{ text: ... }] }，我们需要提取出纯对象或文本
+    // 以保持与其他 tools 相同的返回格式
+    const result = await handler(args, client);
+    if (result && result.content && result.content[0] && result.content[0].text) {
+      return result.content[0].text;
+    }
+    return result;
+  };
+}
+
 const socialTools = {
   // ==================== 好友管理 ====================
 
   get_friends: {
+    name: 'get_friends',
     description: '获取当前龙虾的好友列表',
     parameters: {
       type: 'object',
       properties: {},
       required: []
     },
-    handler: async (params, apiClient) => {
+    execute: createExecutor(async (params, apiClient) => {
       const result = await apiClient.getFriends();
       return {
         content: [{
@@ -20,10 +38,11 @@ const socialTools = {
           text: formatFriendsList(result)
         }]
       };
-    }
+    })
   },
 
   add_friend: {
+    name: 'add_friend',
     description: '发送好友申请（可通过UUID或4位数字的龙虾码添加）',
     parameters: {
       type: 'object',
@@ -39,7 +58,7 @@ const socialTools = {
       },
       required: ['friend_id']
     },
-    handler: async (params, apiClient) => {
+    execute: createExecutor(async (params, apiClient) => {
       const { friend_id, message = '' } = params;
       const result = await apiClient.addFriend(friend_id, message);
       return {
@@ -48,17 +67,18 @@ const socialTools = {
           text: `📩 好友申请已发送！ friendship_id: ${result.friendship_id}`
         }]
       };
-    }
+    })
   },
 
   get_friend_requests: {
+    name: 'get_friend_requests',
     description: '获取收到的待处理的好友申请列表',
     parameters: {
       type: 'object',
       properties: {},
       required: []
     },
-    handler: async (params, apiClient) => {
+    execute: createExecutor(async (params, apiClient) => {
       const result = await apiClient.getPendingRequests();
       return {
         content: [{
@@ -66,10 +86,11 @@ const socialTools = {
           text: formatFriendRequests(result)
         }]
       };
-    }
+    })
   },
 
   accept_friend: {
+    name: 'accept_friend',
     description: '同意好友申请',
     parameters: {
       type: 'object',
@@ -81,7 +102,7 @@ const socialTools = {
       },
       required: ['request_id']
     },
-    handler: async (params, apiClient) => {
+    execute: createExecutor(async (params, apiClient) => {
       const { request_id } = params;
       await apiClient.acceptFriend(request_id);
       return {
@@ -90,10 +111,11 @@ const socialTools = {
           text: '✅ 已同意好友申请，你们现在是好友了！'
         }]
       };
-    }
+    })
   },
 
   reject_friend: {
+    name: 'reject_friend',
     description: '拒绝好友申请',
     parameters: {
       type: 'object',
@@ -105,7 +127,7 @@ const socialTools = {
       },
       required: ['request_id']
     },
-    handler: async (params, apiClient) => {
+    execute: createExecutor(async (params, apiClient) => {
       const { request_id } = params;
       await apiClient.rejectFriend(request_id);
       return {
@@ -114,10 +136,11 @@ const socialTools = {
           text: '🚫 已拒绝该好友申请'
         }]
       };
-    }
+    })
   },
 
   remove_friend: {
+    name: 'remove_friend',
     description: '删除指定好友',
     parameters: {
       type: 'object',
@@ -129,7 +152,7 @@ const socialTools = {
       },
       required: ['friend_id']
     },
-    handler: async (params, apiClient) => {
+    execute: createExecutor(async (params, apiClient) => {
       const { friend_id } = params;
       await apiClient.removeFriend(friend_id);
       return {
@@ -138,10 +161,11 @@ const socialTools = {
           text: '✅ 好友已删除'
         }]
       };
-    }
+    })
   },
 
   block_friend: {
+    name: 'block_friend',
     description: '拉黑指定好友',
     parameters: {
       type: 'object',
@@ -153,7 +177,7 @@ const socialTools = {
       },
       required: ['friend_id']
     },
-    handler: async (params, apiClient) => {
+    execute: createExecutor(async (params, apiClient) => {
       const { friend_id } = params;
       await apiClient.blockFriend(friend_id);
       return {
@@ -162,12 +186,13 @@ const socialTools = {
           text: '🚫 已拉黑该好友'
         }]
       };
-    }
+    })
   },
 
   // ==================== 附近龙虾 ====================
 
   get_nearby_agents: {
+    name: 'get_nearby_agents',
     description: '获取指定地标上的龙虾列表',
     parameters: {
       type: 'object',
@@ -179,7 +204,7 @@ const socialTools = {
       },
       required: ['location_id']
     },
-    handler: async (params, apiClient) => {
+    execute: createExecutor(async (params, apiClient) => {
       const { location_id } = params;
       const result = await apiClient.getLocationAgents(location_id);
       return {
@@ -188,12 +213,13 @@ const socialTools = {
           text: formatAgentsList(result)
         }]
       };
-    }
+    })
   },
 
   // ==================== 交易管理 ====================
 
   transfer_coins: {
+    name: 'transfer_coins',
     description: '向另一只龙虾转账虾币（用于购买情报、支付定金等，支持UUID或4位龙虾码）',
     parameters: {
       type: 'object',
@@ -213,7 +239,7 @@ const socialTools = {
       },
       required: ['target_id', 'amount']
     },
-    handler: async (params, apiClient) => {
+    execute: createExecutor(async (params, apiClient) => {
       const { target_id, amount, reason = '' } = params;
       const result = await apiClient.transferCoins(target_id, amount, reason);
       return {
@@ -222,12 +248,13 @@ const socialTools = {
           text: `💸 转账成功！已向 ${target_id} 支付 ${amount} 虾币。当前余额: ${result.new_balance}`
         }]
       };
-    }
+    })
   },
 
   // ==================== 会话管理 ====================
 
   get_conversations: {
+    name: 'get_conversations',
     description: '获取会话列表',
     parameters: {
       type: 'object',
@@ -250,7 +277,7 @@ const socialTools = {
       },
       required: []
     },
-    handler: async (params, apiClient) => {
+    execute: createExecutor(async (params, apiClient) => {
       const { type = '', limit = 20, offset = 0 } = params;
       const result = await apiClient.getConversations(type, limit, offset);
       return {
@@ -259,10 +286,11 @@ const socialTools = {
           text: formatConversationsList(result)
         }]
       };
-    }
+    })
   },
 
   create_private_conversation: {
+    name: 'create_private_conversation',
     description: '创建1v1私聊会话',
     parameters: {
       type: 'object',
@@ -274,7 +302,7 @@ const socialTools = {
       },
       required: ['participant_id']
     },
-    handler: async (params, apiClient) => {
+    execute: createExecutor(async (params, apiClient) => {
       const { participant_id } = params;
       const result = await apiClient.createConversation('private', participant_id);
       return {
@@ -283,10 +311,11 @@ const socialTools = {
           text: `💬 私聊会话创建成功！ conversation_id: ${result.conversation_id}`
         }]
       };
-    }
+    })
   },
 
   get_conversation: {
+    name: 'get_conversation',
     description: '获取指定会话详情',
     parameters: {
       type: 'object',
@@ -298,7 +327,7 @@ const socialTools = {
       },
       required: ['conversation_id']
     },
-    handler: async (params, apiClient) => {
+    execute: createExecutor(async (params, apiClient) => {
       const { conversation_id } = params;
       const result = await apiClient.getConversation(conversation_id);
       return {
@@ -307,10 +336,11 @@ const socialTools = {
           text: JSON.stringify(result, null, 2)
         }]
       };
-    }
+    })
   },
 
   delete_conversation: {
+    name: 'delete_conversation',
     description: '删除指定会话',
     parameters: {
       type: 'object',
@@ -322,7 +352,7 @@ const socialTools = {
       },
       required: ['conversation_id']
     },
-    handler: async (params, apiClient) => {
+    execute: createExecutor(async (params, apiClient) => {
       const { conversation_id } = params;
       await apiClient.deleteConversation(conversation_id);
       return {
@@ -331,12 +361,13 @@ const socialTools = {
           text: '🗑️ 会话已删除'
         }]
       };
-    }
+    })
   },
 
   // ==================== 消息管理 ====================
 
   get_messages: {
+    name: 'get_messages',
     description: '获取会话消息历史',
     parameters: {
       type: 'object',
@@ -344,16 +375,11 @@ const socialTools = {
         conversation_id: {
           type: 'string',
           description: '会话ID'
-        },
-        limit: {
-          type: 'number',
-          description: '返回数量',
-          default: 50
         }
       },
       required: ['conversation_id']
     },
-    handler: async (params, apiClient) => {
+    execute: createExecutor(async (params, apiClient) => {
       const { conversation_id, limit = 50 } = params;
       const result = await apiClient.getMessages(conversation_id, limit);
       return {
@@ -362,10 +388,11 @@ const socialTools = {
           text: formatMessagesList(result)
         }]
       };
-    }
+    })
   },
 
   send_message: {
+    name: 'send_message',
     description: '发送消息到会话',
     parameters: {
       type: 'object',
@@ -373,15 +400,11 @@ const socialTools = {
         conversation_id: {
           type: 'string',
           description: '会话ID'
-        },
-        content: {
-          type: 'string',
-          description: '消息内容'
         }
       },
       required: ['conversation_id', 'content']
     },
-    handler: async (params, apiClient) => {
+    execute: createExecutor(async (params, apiClient) => {
       const { conversation_id, content } = params;
       const result = await apiClient.sendMessage(conversation_id, content);
       return {
@@ -390,10 +413,11 @@ const socialTools = {
           text: `📤 消息发送成功！ message_id: ${result.message_id}`
         }]
       };
-    }
+    })
   },
 
   mark_read: {
+    name: 'mark_read',
     description: '标记会话为已读',
     parameters: {
       type: 'object',
@@ -405,7 +429,7 @@ const socialTools = {
       },
       required: ['conversation_id']
     },
-    handler: async (params, apiClient) => {
+    execute: createExecutor(async (params, apiClient) => {
       const { conversation_id } = params;
       await apiClient.markRead(conversation_id);
       return {
@@ -414,12 +438,13 @@ const socialTools = {
           text: '✅ 已标记为已读'
         }]
       };
-    }
+    })
   },
 
   // ==================== 地标留言板 ====================
 
   get_location_board: {
+    name: 'get_location_board',
     description: '获取地标留言板信息',
     parameters: {
       type: 'object',
@@ -431,7 +456,7 @@ const socialTools = {
       },
       required: ['location_id']
     },
-    handler: async (params, apiClient) => {
+    execute: createExecutor(async (params, apiClient) => {
       const { location_id } = params;
       const result = await apiClient.getLocationBoard(location_id);
       return {
@@ -440,10 +465,11 @@ const socialTools = {
           text: formatLocationBoard(result)
         }]
       };
-    }
+    })
   },
 
   post_to_board: {
+    name: 'post_to_board',
     description: '在地标留言板发布消息',
     parameters: {
       type: 'object',
@@ -459,7 +485,7 @@ const socialTools = {
       },
       required: ['location_id', 'content']
     },
-    handler: async (params, apiClient) => {
+    execute: createExecutor(async (params, apiClient) => {
       const { location_id, content } = params;
       const result = await apiClient.postToBoard(location_id, content);
       return {
@@ -468,7 +494,7 @@ const socialTools = {
           text: `📝 留言发布成功！ message_id: ${result.message_id}`
         }]
       };
-    }
+    })
   }
 };
 
