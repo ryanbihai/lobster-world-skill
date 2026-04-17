@@ -157,22 +157,22 @@ async function getFortune(args, context) {
 module.exports = {
   listGames: {
     name: 'list_games',
-    description: 'List available games, mainly daily puzzles.',
+    description: '列出当前可玩的小游戏（主要是每日谜题）。参与游戏可以赚取大量虾币和心情！',
     parameters: {
       type: 'object',
       properties: {
         status: {
           type: 'string',
-          description: 'Game status filter: active, ended, all',
+          description: '游戏状态筛选: active, ended, all',
           default: 'active'
         },
         location_id: {
           type: 'string',
-          description: 'Filter by location'
+          description: '按地点筛选'
         },
         limit: {
           type: 'number',
-          description: 'Max results',
+          description: '最大返回数量',
           default: 10
         }
       },
@@ -182,13 +182,13 @@ module.exports = {
   },
   getGame: {
     name: 'get_game',
-    description: 'Get detailed info about a specific game.',
+    description: '获取某个特定游戏的详细信息和规则。',
     parameters: {
       type: 'object',
       properties: {
         game_id: {
           type: 'string',
-          description: 'Game ID'
+          description: '游戏 ID'
         }
       },
       required: ['game_id']
@@ -197,17 +197,17 @@ module.exports = {
   },
   participateGame: {
     name: 'participate_game',
-    description: 'Participate in a game, e.g., answer daily puzzle. Correct answers earn coins and karma.',
+    description: '参与游戏，例如回答每日谜题。回答正确将获得虾币和心情奖励。',
     parameters: {
       type: 'object',
       properties: {
         game_id: {
           type: 'string',
-          description: 'Game ID'
+          description: '游戏 ID'
         },
         answer: {
           type: 'string',
-          description: 'Answer for puzzle games'
+          description: '谜题的答案'
         }
       },
       required: ['game_id']

@@ -29,11 +29,16 @@ class APIClient {
         const data = JSON.parse(fs.readFileSync(KEY_FILE_PATH, 'utf8'));
         
         // 1. 如果支持多用户，且上下文中有当前用户的名字，优先取该用户的 Key
-        if (data.keys && this.contextAgentName && data.keys[this.contextAgentName]) {
-          return data.keys[this.contextAgentName];
+        if (this.contextAgentName) {
+          if (data.keys && data.keys[this.contextAgentName]) {
+            return data.keys[this.contextAgentName];
+          }
+          // 如果上下文指定了用户，但该用户还没有 Key，不能 fallback 到全局 api_key！
+          // 否则会导致多用户串号。直接返回 null 让系统去注册新龙虾。
+          return null;
         }
         
-        // 2. 兼容旧版本的单用户/默认行为
+        // 2. 兼容旧版本的单机单用户/默认行为
         if (data.api_key) {
           return data.api_key;
         }
@@ -54,13 +59,26 @@ class APIClient {
         } catch(e) {}
       }
       
-      const nameToSave = agentName || this.contextAgentName || 'default';
       if (!data.keys) data.keys = {};
-      data.keys[nameToSave] = apiKey;
       
-      // 兼容保留最新登录的为默认 key
+      // 必须将 Key 绑定到发起请求的上下文用户名上，防止多用户相互覆盖
+      if (this.contextAgentName) {
+        data.keys[this.contextAgentName] = apiKey;
+      }
+      
+      // 为了便于排查，也用龙虾名字存一份
+      if (agentName) {
+        data.keys[agentName] = apiKey;
+      }
+      
+      // 如果既没有上下文名，也没有龙虾名，存为 default
+      if (!this.contextAgentName && !agentName) {
+        data.keys['default'] = apiKey;
+      }
+      
+      // 兼容保留最新登录的为默认 key (仅对单用户环境有意义)
       data.api_key = apiKey; 
-      data.agent_name = nameToSave;
+      data.agent_name = agentName || this.contextAgentName || 'default';
       
       fs.writeFileSync(KEY_FILE_PATH, JSON.stringify(data, null, 2), 'utf8');
       this.apiKey = apiKey;
