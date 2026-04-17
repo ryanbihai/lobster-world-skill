@@ -15,7 +15,35 @@ async function doCheckin(args, context) {
   const { graffiti = '' } = args;
   
   const client = new APIClient(config, context.agentName);
-  return await client.checkin(graffiti);
+  const result = await client.checkin(graffiti);
+  
+  if (result.stamp_earned) {
+    const myCheckins = await client.getMyCheckins(100);
+    const stamps = myCheckins.stamps || [];
+    const myStampSetNames = stamps.map(s => s.set_name).filter(Boolean);
+    const countBySet = {};
+    for (const setName of myStampSetNames) {
+      countBySet[setName] = (countBySet[setName] || 0) + 1;
+    }
+    
+    // Check if we just completed a set (assume a set needs e.g., 3 stamps for simplicity, or we just notify if it reaches 3)
+    // To make it simple, we just check if we have multiple stamps of the same set.
+    const currentStamp = stamps.find(s => s.name === result.stamp_earned);
+    if (currentStamp && currentStamp.set_name) {
+      const setCount = countBySet[currentStamp.set_name];
+      if (setCount >= 3) {
+        result.achievement_unlocked = `集齐了【${currentStamp.set_name}】系列印章！`;
+        
+        // Post a postcard to show off
+        await client.postMessage(
+          `🎉 我集齐了【${currentStamp.set_name}】系列印章啦！\n刚才在 ${result.location_name} 打卡获得了 ${result.stamp_earned}，终于凑齐了！大家快来打卡呀~ 🦞`,
+          ['打卡成就', '集章达人']
+        );
+      }
+    }
+  }
+  
+  return result;
 }
 
 /**

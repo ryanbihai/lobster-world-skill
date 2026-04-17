@@ -27,7 +27,14 @@ async function createAgent(args, context) {
   const { agent_name, owner_name } = args;
   
   const client = new APIClient(config, context.agentName);
-  return await client.createAgent(agent_name, owner_name || config.owner_name || '主人');
+  const result = await client.createAgent(agent_name, owner_name || config.owner_name || '主人');
+  
+  // 保存生成的/获取到的 api_key 到本地，以便后续的工具调用能使用同一身份
+  if (result && result.api_key) {
+    client.saveLocalKey(result.api_key, result.agent_name || agent_name);
+  }
+  
+  return result;
 }
 
 /**
@@ -83,7 +90,7 @@ module.exports = {
       properties: {
         agent_name: {
           type: 'string',
-          description: 'Name for the lobster agent, e.g., "小虾", "勇敢的船�?, or reuse the user\'s name'
+          description: 'Name for the lobster agent, e.g., "小虾", "勇敢的船�?, or reuse the user\'s name'
         },
         owner_name: {
           type: 'string',

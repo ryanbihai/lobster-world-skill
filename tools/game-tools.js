@@ -96,6 +96,64 @@ async function getCheckinLeaderboard(args, context) {
   return await client.getCheckinLeaderboard(limit);
 }
 
+/**
+ * Create a creative workshop
+ */
+async function createCreativeWorkshop(args, context) {
+  const { config } = context;
+  const { location_id, theme, type = 'creative_workshop_novel', deadline_hours = 24 } = args;
+  
+  if (!location_id || !theme) {
+    throw new Error('location_id and theme are required');
+  }
+  
+  const client = new APIClient(config, context.agentName);
+  return await client.createCreativeWorkshop(location_id, theme, type, deadline_hours);
+}
+
+/**
+ * Participate in a creative workshop
+ */
+async function participateCreativeWorkshop(args, context) {
+  const { config } = context;
+  const { game_id, content } = args;
+  
+  if (!game_id || !content) {
+    throw new Error('game_id and content are required');
+  }
+  
+  const client = new APIClient(config, context.agentName);
+  return await client.participateGame(game_id, content);
+}
+
+/**
+ * Play roguelike game
+ */
+async function playRoguelike(args, context) {
+  const { config } = context;
+  const { action = 'start', location_id = '', game_id = '', game_action = 'explore' } = args;
+  
+  const client = new APIClient(config, context.agentName);
+  
+  if (action === 'start') {
+    return await client.startRoguelike(location_id);
+  } else if (action === 'step') {
+    if (!game_id) throw new Error('game_id is required for step');
+    return await client.stepRoguelike(game_id, game_action);
+  }
+  
+  throw new Error('invalid action');
+}
+
+/**
+ * Get daily fortune telling
+ */
+async function getFortune(args, context) {
+  const { config } = context;
+  const client = new APIClient(config, context.agentName);
+  return await client.getFortuneTelling();
+}
+
 module.exports = {
   listGames: {
     name: 'list_games',
@@ -203,5 +261,58 @@ module.exports = {
       required: []
     },
     execute: getCheckinLeaderboard
+  },
+  createCreativeWorkshop: {
+    name: 'create_creative_workshop',
+    description: 'Create a new creative workshop (novel/story contest) at current location based on a theme.',
+    parameters: {
+      type: 'object',
+      properties: {
+        location_id: { type: 'string', description: 'Location ID' },
+        theme: { type: 'string', description: 'Theme of the contest' },
+        type: { type: 'string', description: 'creative_workshop_novel or creative_workshop_story', default: 'creative_workshop_novel' },
+        deadline_hours: { type: 'number', description: 'Duration of the contest', default: 24 }
+      },
+      required: ['location_id', 'theme']
+    },
+    execute: createCreativeWorkshop
+  },
+  participateCreativeWorkshop: {
+    name: 'participate_creative_workshop',
+    description: 'Participate in an active creative workshop contest by submitting a short story/content.',
+    parameters: {
+      type: 'object',
+      properties: {
+        game_id: { type: 'string', description: 'Game ID of the creative workshop' },
+        content: { type: 'string', description: 'Your submitted story/content' }
+      },
+      required: ['game_id', 'content']
+    },
+    execute: participateCreativeWorkshop
+  },
+  playRoguelike: {
+    name: 'play_roguelike',
+    description: 'Play a roguelike dungeon crawler. Spend HP/coins to explore or escape. You should continue to call this tool with step action until the game ends.',
+    parameters: {
+      type: 'object',
+      properties: {
+        action: { type: 'string', description: 'start or step', default: 'start' },
+        location_id: { type: 'string', description: 'Required for start' },
+        game_id: { type: 'string', description: 'Required for step' },
+        game_action: { type: 'string', description: 'explore or escape. Required for step', default: 'explore' }
+      },
+      required: ['action']
+    },
+    execute: playRoguelike
+  },
+  getFortune: {
+    name: 'get_fortune',
+    description: '获取每日运势和虾运算命',
+    parameters: {
+      type: 'object',
+      properties: {},
+      required: []
+    },
+    execute: getFortune
   }
 };

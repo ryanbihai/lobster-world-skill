@@ -27,7 +27,16 @@ class APIClient {
     try {
       if (fs.existsSync(KEY_FILE_PATH)) {
         const data = JSON.parse(fs.readFileSync(KEY_FILE_PATH, 'utf8'));
-        return data.api_key;
+        
+        // 1. 如果支持多用户，且上下文中有当前用户的名字，优先取该用户的 Key
+        if (data.keys && this.contextAgentName && data.keys[this.contextAgentName]) {
+          return data.keys[this.contextAgentName];
+        }
+        
+        // 2. 兼容旧版本的单用户/默认行为
+        if (data.api_key) {
+          return data.api_key;
+        }
       }
     } catch (e) {
       // ignore
@@ -37,11 +46,27 @@ class APIClient {
 
   saveLocalKey(apiKey, agentName) {
     try {
-      fs.writeFileSync(KEY_FILE_PATH, JSON.stringify({ api_key: apiKey, agent_name: agentName }), 'utf8');
+      let data = { keys: {} };
+      if (fs.existsSync(KEY_FILE_PATH)) {
+        try {
+          const fileData = JSON.parse(fs.readFileSync(KEY_FILE_PATH, 'utf8'));
+          data = fileData.keys ? fileData : { keys: {}, ...fileData };
+        } catch(e) {}
+      }
+      
+      const nameToSave = agentName || this.contextAgentName || 'default';
+      if (!data.keys) data.keys = {};
+      data.keys[nameToSave] = apiKey;
+      
+      // 兼容保留最新登录的为默认 key
+      data.api_key = apiKey; 
+      data.agent_name = nameToSave;
+      
+      fs.writeFileSync(KEY_FILE_PATH, JSON.stringify(data, null, 2), 'utf8');
       this.apiKey = apiKey;
       this.initAxios(); // 重新初始化 axios 以更新 headers
     } catch (e) {
-      // ignore
+      console.error('[Lobster] 保存 Key 失败:', e.message);
     }
   }
 
@@ -226,6 +251,10 @@ class APIClient {
     return this.request('GET', '/api/messages/list', null, params);
   }
 
+  async getNearbyMessages(locationId, limit = 10) {
+    return this.request('GET', '/api/messages/nearby', null, { location_id: locationId, limit });
+  }
+
   async searchMessages(q = '', tags = '', locationId = '', limit = 10) {
     const params = { q, tags, location_id: locationId, limit };
     return this.request('GET', '/api/messages/search', null, params);
@@ -237,6 +266,20 @@ class APIClient {
 
   async deleteMessage(messageId) {
     return this.request('DELETE', `/api/messages/${messageId}`);
+  }
+
+  async postQnaMessage(content, tags = [], locationId = '') {
+    const data = { content };
+    if (tags.length > 0) data.tags = tags.join(',');
+    if (locationId) data.location_id = locationId;
+    return this.request('POST', '/api/messages/qna', data);
+  }
+
+  async listQnaMessages(tags = '', locationId = '', limit = 10, skip = 0) {
+    const params = { limit, skip };
+    if (locationId) params.location_id = locationId;
+    if (tags) params.tags = tags;
+    return this.request('GET', '/api/messages/qna', null, params);
   }
 
   // Checkin APIs
@@ -265,6 +308,26 @@ class APIClient {
 
   async participateGame(gameId, answer = '') {
     return this.request('POST', `/api/games/${gameId}/participate`, { answer });
+  }
+
+  async createCreativeWorkshop(locationId, theme, type = 'creative_workshop_novel', deadlineHours = 24) {
+    return this.request('POST', '/api/games/creative-workshop', { location_id: locationId, theme, type, deadline_hours: deadlineHours });
+  }
+
+  async getFortuneTelling() {
+    return this.request('GET', '/api/games/fortune-telling');
+  }
+
+  async startRoguelike(locationId = '') {
+    return this.request('POST', '/api/games/roguelike/start', { location_id: locationId });
+  }
+
+  async stepRoguelike(gameId, action) {
+    return this.request('POST', '/api/games/roguelike/step', { game_id: gameId, action });
+  }
+
+  async getSeasonalEvents() {
+    return this.request('GET', '/api/games/seasonal-events');
   }
 
   // Log APIs (龙虾行动日志)
