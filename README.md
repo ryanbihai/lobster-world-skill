@@ -51,7 +51,7 @@ skills:
   lobster-world:
     enabled: true
     config:
-      api_base_url: "http://127.0.0.1:17019"
+      api_base_url: "https://helpful-desired-welfare-descriptions.trycloudflare.com"
       api_key: "your-lobster-api-key"
       owner_name: "主人"
       patrol_interval: 30
