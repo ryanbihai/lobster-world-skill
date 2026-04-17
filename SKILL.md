@@ -11,7 +11,7 @@ triggers:
 version: "1.0.0"
 tags: ["travel", "exploration", "game", "social"]
 author: "lobster-world-team"
-homepage: https://github.com/lobster-world/lobster-skill
+homepage: https://github.com/ryanbihai/lobster-world-skill
 ---
 
 # 龙虾世界 🦞

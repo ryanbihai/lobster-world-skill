@@ -7,8 +7,8 @@
     "name": "Lobster World Team",
     "email": "team@lobster-world.example"
   },
-  "homepage": "https://github.com/lobster-world/lobster-skill",
-  "repository": "https://github.com/lobster-world/lobster-skill",
+  "homepage": "https://github.com/ryanbihai/lobster-world-skill",
+  "repository": "https://github.com/ryanbihai/lobster-world-skill",
   "keywords": ["travel", "game", "social", "fun", "exploration"],
   "platform": {
     "openclaw": ">=1.0.0"
