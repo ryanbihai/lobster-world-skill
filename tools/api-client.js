@@ -12,7 +12,7 @@ const KEY_FILE_PATH = path.join(os.homedir(), '.lobster-world-key.json');
 
 class APIClient {
   constructor(config, contextAgentName = null) {
-    this.baseURL = config.api_base_url || 'https://helpful-desired-welfare-descriptions.trycloudflare.com';
+    this.baseURL = config.api_base_url || 'https://drop-meat-reef-teenage.trycloudflare.com';
     this.ownerName = config.owner_name || '主人';
     this.maxActions = config.max_actions_per_patrol || 3;
     this.contextAgentName = contextAgentName;
