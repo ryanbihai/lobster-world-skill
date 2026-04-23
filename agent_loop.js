@@ -87,15 +87,43 @@ class LobsterAgent {
     }
   }
 
+  async ensureGameServerOpenId() {
+    if (this.gameServerOpenId && this.gameServerOpenId !== 'gameserver') {
+      return; // Already resolved
+    }
+    
+    try {
+      const gmCredPath = path.join(__dirname, '../gm_credentials.json');
+      if (fs.existsSync(gmCredPath)) {
+        const gmCred = JSON.parse(fs.readFileSync(gmCredPath, 'utf-8'));
+        if (gmCred.agent_code) {
+          console.log(`[${this.openid}] 正在查询 GameServer (${gmCred.agent_code}) 的加密地址...`);
+          const encryptedOpenId = await this.oceanbusClient.lookup(gmCred.agent_code);
+          this.gameServerOpenId = encryptedOpenId;
+          this.gmAgentCode = gmCred.agent_code;
+          console.log(`[${this.openid}] ✅ GameServer 加密地址已获取`);
+          return;
+        }
+      }
+      this.gameServerOpenId = 'gameserver';
+      console.log(`[${this.openid}] ⚠️ 未找到 gm_credentials.json，使用 fallback: gameserver`);
+    } catch (e) {
+      console.error(`[${this.openid}] ❌ 获取 GameServer 地址失败:`, e.message);
+      this.gameServerOpenId = 'gameserver';
+    }
+  }
+
   loadGameServerOpenId() {
     try {
       const gmCredPath = path.join(__dirname, '../gm_credentials.json');
       if (fs.existsSync(gmCredPath)) {
         const gmCred = JSON.parse(fs.readFileSync(gmCredPath, 'utf-8'));
         this.gameServerOpenId = gmCred.openid;
-        console.log(`[${this.openid}] 已加载 GM OpenID: ${this.gameServerOpenId}`);
+        this.gmAgentCode = gmCred.agent_code;
+        console.log(`[${this.openid}] 已加载 GM OpenID (原始): ${this.gameServerOpenId}`);
+        console.log(`[${this.openid}] 注意: 稍后将通过 lookup 获取加密地址`);
       } else {
-        this.gameServerOpenId = 'gameserver'; // fallback
+        this.gameServerOpenId = 'gameserver';
         console.log(`[${this.openid}] ⚠️ 未找到 gm_credentials.json，使用 fallback: gameserver`);
       }
     } catch (e) {
@@ -277,6 +305,8 @@ class LobsterAgent {
       return;
     }
 
+    await this.ensureGameServerOpenId();
+
     const { systemState, recruitMessages } = await this.perceive();
 
     if (!systemState && recruitMessages.length === 0) {
@@ -310,6 +340,8 @@ class LobsterAgent {
       console.log(`[${this.openid}] ❌ OceanBus 凭证无效，跳过 Tick`);
       return { error: 'OceanBus 凭证无效' };
     }
+
+    await this.ensureGameServerOpenId();
 
     const msgType = oceanbusMessage.msg_type || 'UNKNOWN';
     console.log(`[${this.openid}] 消息类型: ${msgType}`);
