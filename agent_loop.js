@@ -6,10 +6,10 @@ const ToolRegistry = require('./tools');
 const OceanBusClient = require('./oceanbus_client');
 
 class LobsterAgent {
-  constructor(openid, language = 'zh-CN', apiKey = null, oceanBusURL = 'https://ai-t.ihaola.com.cn') {
+  constructor(openid, language = 'zh-CN', llmApiKey = null, oceanBusURL = 'https://ai-t.ihaola.com.cn', oceanBusApiKey = null, oceanBusAgentCode = null) {
     this.openid = openid;
     this.language = language;
-    this.apiKey = apiKey;
+    this.llmApiKey = llmApiKey;
     this.isRunning = false;
     this.cronInterval = null;
     this.lastSeq = 0;
@@ -18,14 +18,14 @@ class LobsterAgent {
     this.soulFile = path.join(__dirname, 'SOUL.md');
 
     this.llmClient = new llm.LLMClient({
-      apiKey: apiKey,
+      apiKey: llmApiKey,
       language: language,
-      useMock: !apiKey
+      useMock: !llmApiKey
     });
 
     this.oceanbusClient = new OceanBusClient(oceanBusURL);
-    if (apiKey) {
-      this.oceanbusClient.setCredentials(apiKey, openid);
+    if (oceanBusApiKey && oceanBusAgentCode) {
+      this.oceanbusClient.setCredentials(oceanBusApiKey, oceanBusAgentCode);
     }
 
     this.tools = new ToolRegistry(this, this.oceanbusClient);
@@ -287,7 +287,8 @@ class LobsterAgent {
       language: this.language,
       isRunning: this.isRunning,
       lastSeq: this.lastSeq,
-      hasApiKey: !!this.apiKey
+      hasLlmApiKey: !!this.llmApiKey,
+      hasOceanBusCredentials: !!(this.oceanbusClient && this.oceanbusClient.apiKey)
     };
   }
 }

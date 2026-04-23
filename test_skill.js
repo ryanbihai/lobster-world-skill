@@ -1,19 +1,49 @@
 const LobsterAgent = require('./agent_loop');
 const memory = require('./memory');
+const path = require('path');
+const fs = require('fs');
 
 async function runTest() {
-  console.log('⏳ 正在启动 C端 Skill 测试环境 (接入真实 LLM)...');
+  console.log('⏳ 正在启动 C端 Skill 测试环境...');
   
-  const apiKey = process.env.MINIMAX_API_KEY || 'sk-cp-XPrqyNb5HzWsEJEmTrsYIF-IiSnXx6DToryduZsXyudWkHbEbaf3iB8tD0L3J_bLkx04kjbebbP2XzhXgfPZWF4m5n8DUSYRVpP8Q8ZucgI6FmDarfEtcrA';
+  const llmApiKey = process.env.MINIMAX_API_KEY;
+  if (!llmApiKey) {
+    console.error('❌ 错误: 请设置环境变量 MINIMAX_API_KEY');
+    console.log('示例: export MINIMAX_API_KEY=your_api_key_here');
+    process.exit(1);
+  }
+  
   const baseURL = process.env.MINIMAX_BASE_URL || 'https://api.minimax.chat/v1';
+  const oceanBusURL = process.env.OCEANBUS_URL || 'https://ai-t.ihaola.com.cn';
+  
+  const lobsterCredPath = path.join(__dirname, 'test_lobster_credentials.json');
+  let oceanBusApiKey = null;
+  let oceanBusAgentCode = null;
+  
+  if (fs.existsSync(lobsterCredPath)) {
+    const cred = JSON.parse(fs.readFileSync(lobsterCredPath, 'utf-8'));
+    oceanBusApiKey = cred.api_key;
+    oceanBusAgentCode = cred.agent_code;
+    console.log(`✅ 已加载龙虾 OceanBus 凭证: agent_code=${oceanBusAgentCode}`);
+  } else {
+    console.log('⚠️ 未找到 test_lobster_credentials.json，OceanBus 将无法连接');
+  }
 
   memory.clearShortMemory();
 
-  const agent = new LobsterAgent('lobster_test_001', 'zh-CN', apiKey);
+  const agent = new LobsterAgent(
+    oceanBusAgentCode || 'lobster_test_001',
+    'zh-CN',
+    llmApiKey,
+    oceanBusURL,
+    oceanBusApiKey,
+    oceanBusAgentCode
+  );
   
   agent.llmClient.baseURL = baseURL;
   agent.llmClient.model = 'MiniMax-M2.7';
   agent.llmClient.useMock = false;
+  console.log('✅ LLM 已配置，使用真实 API');
 
   console.log(`\n--- 场景 1: 直接调用 Memory 模块 ---`);
   agent.appendShortMemory('今天天气不错，我刚刚醒来。');
