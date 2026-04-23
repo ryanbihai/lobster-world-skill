@@ -107,10 +107,11 @@ class OceanBusClient {
       const uuid = require('crypto').randomUUID(); // 用于去重的 client_msg_id
       
       // 组装符合 12_规范文档 的 Envelope
+      // 如果 payload 中已有 from_openid 则保留，否则设为 self
       const envelope = {
-        from_openid: "self", // 实际在 L0 层面发件人身份是隐藏或由系统附加的，应用层可带可不带
         timestamp: Date.now(),
-        ...payload
+        ...payload,
+        from_openid: payload.from_openid || "self"
       };
 
       const requestBody = {

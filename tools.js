@@ -16,7 +16,8 @@ class ToolRegistry {
       action: 'EXECUTE_ACTION',
       action_id,
       target_location_id: target_id,
-      from_openid: this.agent.openid
+      from_openid: this.agent.openid,
+      agent_code: this.agent.openid
     };
 
     if (this.oceanbus) {
