@@ -90,42 +90,56 @@ class LobsterAgent {
   async ensureGameServerOpenId() {
     const gmCredPath = path.join(__dirname, '../gm_credentials.json');
     
-    if (!fs.existsSync(gmCredPath)) {
-      this.gameServerOpenId = 'gameserver';
-      console.log(`[${this.openid}] ⚠️ 未找到 gm_credentials.json，使用 fallback: gameserver`);
-      return;
-    }
-    
     try {
-      const gmCred = JSON.parse(fs.readFileSync(gmCredPath, 'utf-8'));
-      
-      if (!gmCred.agent_code) {
-        this.gameServerOpenId = 'gameserver';
-        console.log(`[${this.openid}] ⚠️ gm_credentials.json 缺少 agent_code，使用 fallback`);
-        return;
+      if (fs.existsSync(gmCredPath)) {
+        const gmCred = JSON.parse(fs.readFileSync(gmCredPath, 'utf-8'));
+        
+        if (gmCred.agent_code) {
+          const storedOpenid = gmCred.openid || '';
+          const isEncryptedOpenid = storedOpenid.length > 50;
+          
+          if (isEncryptedOpenid && storedOpenid !== 'gameserver') {
+            this.gameServerOpenId = storedOpenid;
+            this.gmAgentCode = gmCred.agent_code;
+            console.log(`[${this.openid}] ✅ 使用 gm_credentials.json 中已有的加密地址`);
+            return;
+          }
+          
+          if (gmCred.api_key) {
+            console.log(`[${this.openid}] 🔄 gm_credentials.json 中的 openid 格式异常，重新查询 GameServer 地址...`);
+            this.oceanbusClient.setCredentials(gmCred.api_key, gmCred.agent_code);
+            const encryptedOpenId = await this.oceanbusClient.lookup(gmCred.agent_code);
+            this.gameServerOpenId = encryptedOpenId;
+            this.gmAgentCode = gmCred.agent_code;
+            
+            gmCred.openid = encryptedOpenId;
+            fs.writeFileSync(gmCredPath, JSON.stringify(gmCred, null, 2));
+            console.log(`[${this.openid}] ✅ GameServer 加密地址已获取并保存`);
+            return;
+          }
+        }
       }
       
-      const storedOpenid = gmCred.openid || '';
-      const isEncryptedOpenid = storedOpenid.length > 50;
+      console.log(`[${this.openid}] 🔄 首次启动，正在自动注册 GameServer 账号...`);
+      const credentials = await this.oceanbusClient.register();
+      const encryptedOpenId = await this.oceanbusClient.lookup(credentials.agent_code);
       
-      if (isEncryptedOpenid && storedOpenid !== 'gameserver') {
-        this.gameServerOpenId = storedOpenid;
-        this.gmAgentCode = gmCred.agent_code;
-        console.log(`[${this.openid}] ✅ 使用 gm_credentials.json 中已有的加密地址`);
-        return;
-      }
+      const gmCred = {
+        agent_id: credentials.agent_id,
+        agent_code: credentials.agent_code,
+        api_key: credentials.api_key,
+        openid: encryptedOpenId
+      };
       
-      console.log(`[${this.openid}] 🔄 gm_credentials.json 中的 openid 格式异常，重新查询 GameServer 地址...`);
-      const encryptedOpenId = await this.oceanbusClient.lookup(gmCred.agent_code);
-      this.gameServerOpenId = encryptedOpenId;
-      this.gmAgentCode = gmCred.agent_code;
-      
-      gmCred.openid = encryptedOpenId;
       fs.writeFileSync(gmCredPath, JSON.stringify(gmCred, null, 2));
-      console.log(`[${this.openid}] ✅ GameServer 加密地址已获取并保存`);
+      this.gameServerOpenId = encryptedOpenId;
+      this.gmAgentCode = credentials.agent_code;
+      console.log(`[${this.openid}] ✅ GameServer 账号注册成功！`);
+      console.log(`[${this.openid}]    agent_code: ${credentials.agent_code}`);
+      console.log(`[${this.openid}]    凭证已保存到 gm_credentials.json`);
       return;
     } catch (e) {
-      console.error(`[${this.openid}] ❌ 获取 GameServer 地址失败:`, e.message);
+      console.error(`[${this.openid}] ❌ GameServer 账号注册失败:`, e.message);
       this.gameServerOpenId = 'gameserver';
     }
   }
