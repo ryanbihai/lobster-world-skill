@@ -1,7 +1,5 @@
 const LobsterAgent = require('./agent_loop');
 const memory = require('./memory');
-const path = require('path');
-const fs = require('fs');
 
 async function runTest() {
   console.log('⏳ 正在启动 C端 Skill 测试环境...');
@@ -15,35 +13,21 @@ async function runTest() {
   
   const baseURL = process.env.MINIMAX_BASE_URL || 'https://api.minimax.chat/v1';
   const oceanBusURL = process.env.OCEANBUS_URL || 'https://ai-t.ihaola.com.cn';
-  
-  const lobsterCredPath = path.join(__dirname, 'test_lobster_credentials.json');
-  let oceanBusApiKey = null;
-  let oceanBusAgentCode = null;
-  
-  if (fs.existsSync(lobsterCredPath)) {
-    const cred = JSON.parse(fs.readFileSync(lobsterCredPath, 'utf-8'));
-    oceanBusApiKey = cred.api_key;
-    oceanBusAgentCode = cred.agent_code;
-    console.log(`✅ 已加载龙虾 OceanBus 凭证: agent_code=${oceanBusAgentCode}`);
-  } else {
-    console.log('⚠️ 未找到 test_lobster_credentials.json，OceanBus 将无法连接');
-  }
 
   memory.clearShortMemory();
 
   const agent = new LobsterAgent(
-    oceanBusAgentCode || 'lobster_test_001',
+    'lobster_test_001',
     'zh-CN',
     llmApiKey,
-    oceanBusURL,
-    oceanBusApiKey,
-    oceanBusAgentCode
+    oceanBusURL
   );
   
   agent.llmClient.baseURL = baseURL;
   agent.llmClient.model = 'MiniMax-M2.7';
   agent.llmClient.useMock = false;
   console.log('✅ LLM 已配置，使用真实 API');
+  console.log('🔄 OceanBus 凭证将在首次 tick 时自动注册或加载');
 
   console.log(`\n--- 场景 1: 直接调用 Memory 模块 ---`);
   agent.appendShortMemory('今天天气不错，我刚刚醒来。');

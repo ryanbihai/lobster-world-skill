@@ -6,13 +6,14 @@ const ToolRegistry = require('./tools');
 const OceanBusClient = require('./oceanbus_client');
 
 class LobsterAgent {
-  constructor(openid, language = 'zh-CN', llmApiKey = null, oceanBusURL = 'https://ai-t.ihaola.com.cn', oceanBusApiKey = null, oceanBusAgentCode = null) {
+  constructor(openid, language = 'zh-CN', llmApiKey = null, oceanBusURL = 'https://ai-t.ihaola.com.cn') {
     this.openid = openid;
     this.language = language;
     this.llmApiKey = llmApiKey;
     this.isRunning = false;
     this.cronInterval = null;
     this.lastSeq = 0;
+    this.oceanBusURL = oceanBusURL;
 
     this.baseFile = path.join(__dirname, 'BASE.md');
     this.soulFile = path.join(__dirname, 'SOUL.md');
@@ -24,9 +25,6 @@ class LobsterAgent {
     });
 
     this.oceanbusClient = new OceanBusClient(oceanBusURL);
-    if (oceanBusApiKey && oceanBusAgentCode) {
-      this.oceanbusClient.setCredentials(oceanBusApiKey, oceanBusAgentCode);
-    }
 
     this.tools = new ToolRegistry(this, this.oceanbusClient);
 
@@ -34,6 +32,59 @@ class LobsterAgent {
 
     this.loadPrompts();
     this.loadGameServerOpenId();
+  }
+
+  async ensureOceanBusCredentials() {
+    const credPath = path.join(__dirname, 'test_lobster_credentials.json');
+    
+    if (fs.existsSync(credPath)) {
+      const cred = JSON.parse(fs.readFileSync(credPath, 'utf-8'));
+      if (cred.api_key && cred.agent_code) {
+        this.oceanbusClient.setCredentials(cred.api_key, cred.agent_code);
+        this.openid = cred.agent_code;
+        console.log(`[${this.openid}] ✅ 已加载 OceanBus 凭证: agent_code=${cred.agent_code}`);
+        return true;
+      }
+    }
+
+    console.log(`[${this.openid}] 🔄 首次使用，正在注册新龙虾账号...`);
+    try {
+      const credentials = await this.oceanbusClient.register();
+      credentials.openid = credentials.agent_id;
+      
+      fs.writeFileSync(credPath, JSON.stringify(credentials, null, 2));
+      this.openid = credentials.agent_code;
+      console.log(`[${this.openid}] ✅ 注册成功并保存凭证到 ${credPath}`);
+      return true;
+    } catch (error) {
+      console.error(`[${this.openid}] ❌ 注册失败:`, error.message);
+      return false;
+    }
+  }
+
+  async registerNewOceanBusAccount() {
+    const credPath = path.join(__dirname, 'test_lobster_credentials.json');
+    
+    console.log(`[${this.openid}] 🔄 正在注册新的龙虾账号（覆盖旧凭证）...`);
+    try {
+      const credentials = await this.oceanbusClient.register();
+      credentials.openid = credentials.agent_id;
+      
+      fs.writeFileSync(credPath, JSON.stringify(credentials, null, 2));
+      this.openid = credentials.agent_code;
+      this.oceanbusClient.setCredentials(credentials.api_key, credentials.agent_code);
+      console.log(`[${this.openid}] ✅ 新账号注册成功！`);
+      console.log(`    Agent Code: ${credentials.agent_code}`);
+      console.log(`    API Key: ${credentials.api_key.substring(0, 20)}...`);
+      return {
+        success: true,
+        agent_code: credentials.agent_code,
+        agent_id: credentials.agent_id
+      };
+    } catch (error) {
+      console.error(`[${this.openid}] ❌ 注册失败:`, error.message);
+      return { success: false, error: error.message };
+    }
   }
 
   loadGameServerOpenId() {
@@ -220,6 +271,12 @@ class LobsterAgent {
     console.log(`\n${'='.repeat(50)}`);
     console.log(`[${this.openid}] ⏰ Cron Tick 开始`);
 
+    const credOk = await this.ensureOceanBusCredentials();
+    if (!credOk) {
+      console.log(`[${this.openid}] ❌ OceanBus 凭证无效，跳过本次 Tick`);
+      return;
+    }
+
     const { systemState, recruitMessages } = await this.perceive();
 
     if (!systemState && recruitMessages.length === 0) {
@@ -247,6 +304,12 @@ class LobsterAgent {
   async tick(oceanbusMessage) {
     console.log(`\n${'='.repeat(50)}`);
     console.log(`[${this.openid}] ⏰ 单次 Tick (兼容模式)`);
+
+    const credOk = await this.ensureOceanBusCredentials();
+    if (!credOk) {
+      console.log(`[${this.openid}] ❌ OceanBus 凭证无效，跳过 Tick`);
+      return { error: 'OceanBus 凭证无效' };
+    }
 
     const msgType = oceanbusMessage.msg_type || 'UNKNOWN';
     console.log(`[${this.openid}] 消息类型: ${msgType}`);

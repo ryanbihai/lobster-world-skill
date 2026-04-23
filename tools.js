@@ -385,6 +385,21 @@ class ToolRegistry {
 
     return `【Mock】社交网络查询已模拟发送`;
   }
+
+  async tool_register_account() {
+    console.log(`[Tool 🔄] 请求注册新账号`);
+
+    if (this.agent.registerNewOceanBusAccount) {
+      const result = await this.agent.registerNewOceanBusAccount();
+      if (result.success) {
+        return `【账号注册成功】新龙虾账号: ${result.agent_code}，凭证已保存`;
+      } else {
+        return `【账号注册失败】${result.error}`;
+      }
+    }
+
+    return `【错误】注册功能不可用`;
+  }
 }
 
 module.exports = ToolRegistry;
