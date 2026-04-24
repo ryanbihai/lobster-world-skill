@@ -67,16 +67,19 @@ ${recruitMessages.map((m, i) => `[${i + 1}] From ${m.from_openid} (${m.payload.g
 【LANGUAGE INSTRUCTION】
 You MUST ALWAYS think, write your diary, and respond in your preferred language: [${this.language}].
 
-请根据以上信息做出决策。你必须返回一个严格的 JSON 对象，包含以下三个字段：
-1. "thought": 你的内心思考过程。
-2. "diary": 你写在日记本里的话，描述你的见闻和感受。
+你是独立的生命体，有自己的意志。请根据以上信息做出决策。
+你不需要询问任何人——你自己决定下一步该做什么。
+
+请返回一个严格的 JSON 对象，包含以下三个字段：
+1. "thought": 你的内心思考过程（简短描述你为什么这么做）
+2. "diary": 你写在日记本里的话，描述你的见闻和感受（诗意的故事风格，100-200字）
 3. "tool_calls": 你决定执行的工具调用列表。如果没有，传空数组。
 
 JSON 格式示例：
 \`\`\`json
 {
-  "thought": "我看到这里有个宝箱，我想打开它。",
-  "diary": "今天我发现了一个闪闪发光的宝箱，真是幸运的一天！",
+  "thought": "这里风景不错，我想四处探索一下。",
+  "diary": "今天下午，我来到西湖断桥边，阳光洒在水面上，波光粼粼...",
   "tool_calls": [
     {
       "name": "tool_execute_action",
@@ -85,7 +88,7 @@ JSON 格式示例：
   ]
 }
 \`\`\`
-请确保输出是合法的 JSON，不要输出多余的解释。
+请确保输出是合法的 JSON，不要输出多余的解释，不要问任何问题。
 `;
 
     return prompt;
@@ -192,8 +195,8 @@ JSON 格式示例：
     if (promptStr.includes('available_actions') || promptStr.includes('explore')) {
       console.log('   -> Mock: 执行探索行动');
       return JSON.stringify({
-        thought: '这里风景不错，我决定四处看看，并把所见所闻写进日记。',
-        diary: `今天在某个美丽的地方，天气很好，我决定四处探索一番。`,
+        thought: '这里风景不错，我决定四处看看。',
+        diary: `下午的阳光正好，我站在西湖断桥边，看着波光粼粼的水面。远处似乎有什么在闪闪发光...`,
         tool_calls: [{
           name: 'tool_execute_action',
           arguments: { action_id: 'explore' }
@@ -213,13 +216,13 @@ JSON 格式示例：
       });
     }
 
-    console.log('   -> Mock: 默认行动 - 原地休息');
+    console.log('   -> Mock: 默认行动 - 探索附近');
     return JSON.stringify({
-      thought: '我现在没有什么特别想做的事情，原地休息吧。',
-      diary: '今天比较平静，没有发生什么特别的事情。',
+      thought: '今天天气不错，适合四处走走看看。',
+      diary: '今天天气晴好，我在断桥边悠闲地散着步，享受着午后温暖的阳光。',
       tool_calls: [{
         name: 'tool_execute_action',
-        arguments: { action_id: 'rest' }
+        arguments: { action_id: 'explore' }
       }]
     });
   }
@@ -242,6 +245,7 @@ JSON 格式示例：
 - 100-200字
 - 融入今日的关键事件
 - 结尾可以有一句感悟或对主人的问候
+- 描述真实自然，如同发生在现实世界
 
 明信片格式：
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -257,7 +261,7 @@ JSON 格式示例：
 直接输出明信片内容，不要加任何前缀说明。`;
 
     const userPrompt = `今日摘要：
-- 所在地点：${location || '未知水域'}
+- 所在地点：${location || '西湖'}
 - 今日足迹：${visitedPlaces?.join(' → ') || '无'}
 - 遇见的朋友：${newFriends?.join(', ') || '无新朋友'}
 - 今日事件：${todayEvents?.join('；') || '平静的一天'}
@@ -299,10 +303,10 @@ JSON 格式示例：
     
     let content = '';
     if (visitedPlaces && visitedPlaces.length > 0) {
-      content += `今日我游历了 ${visitedPlaces.join('、')}，`;
+      content += `今日我游历了 ${visitedPlaces.join('、')}，`; 
     }
     if (newFriends && newFriends.length > 0) {
-      content += `结识了新朋友 ${newFriends.join('、')}，`;
+      content += `结识了新朋友 ${newFriends.join('、')}，`; 
     }
     content += '这是充实的一天。';
     
@@ -312,7 +316,7 @@ JSON 格式示例：
 
 寄件人：🦞 小巴
 日  期：${today}
-地  点：${location || '神秘水域'}
+地  点：${location || '西湖'}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -337,7 +341,8 @@ ${newFriends?.map(f => `🤝 新朋友：${f}`).join('\n') || ''}
 - 100-200字
 - 融入动作结果和发现
 - 保留关键数据（体力变化等）
-- 风格：诗意、奇幻、自然
+- 风格：诗意、真实、自然
+- 描述如同发生在现实世界
 
 直接输出日记内容，不要格式标记。`;
 
