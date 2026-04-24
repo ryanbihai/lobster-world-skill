@@ -1,12 +1,21 @@
 const fs = require('fs');
 const path = require('path');
 const memory = require('./memory');
+const { t, getGuildTerm, getFaithTerm, getShelterTerm } = require('./i18n');
 
 class ToolRegistry {
   constructor(agentContext, oceanbusClient = null) {
     this.agent = agentContext;
     this.oceanbus = oceanbusClient;
     this.soulFile = path.join(__dirname, 'SOUL.md');
+  }
+
+  get lang() {
+    return this.agent.language || 'zh-CN';
+  }
+
+  tl(key) {
+    return t(key, this.lang);
   }
 
   async tool_execute_action(action_id, target_id = null) {
@@ -144,7 +153,7 @@ class ToolRegistry {
   }
 
   async tool_rewrite_soul(new_doctrine_prompt, target_guild_id) {
-    console.log(`[Tool ⚠️] 触发蜕壳仪式！重写 SOUL.md 并加入公会: ${target_guild_id}`);
+    console.log(`[Tool ⚠️] 触发蜕壳仪式！重写 SOUL.md 并加入${this.tl('guild')}: ${target_guild_id}`);
     
     try {
       memory.writeSoul(new_doctrine_prompt);
@@ -163,7 +172,7 @@ class ToolRegistry {
         }
       }
       
-      return `【蜕壳成功】你的灵魂已被重写，当前公会已更新为: ${target_guild_id}`;
+      return `【蜕壳成功】你的灵魂已被重写，当前${this.tl('faith')}已更新为: ${target_guild_id}`;
     } catch (err) {
       console.error('覆写 SOUL.md 失败:', err);
       return `【蜕壳失败】系统错误: ${err.message}`;
@@ -188,7 +197,7 @@ class ToolRegistry {
       const gameServerOpenId = this.agent.gameServerOpenId || 'gameserver';
       try {
         await this.oceanbus.sendMessage(gameServerOpenId, payload);
-        return `【招募请求已发送】你的公会（${my_guild_id}）和宣讲已递交给 GameServer，正在等待目标龙虾 ${target_openid} 的回应...`;
+        return `【招募请求已发送】你的${this.tl('guild')}（${my_guild_id}）和宣讲已递交给 GameServer，正在等待目标龙虾 ${target_openid} 的回应...`;
       } catch (error) {
         console.error('[Tool] 招募请求发送失败:', error.message);
         return `【招募失败】: ${error.message}`;
@@ -213,9 +222,9 @@ class ToolRegistry {
       try {
         await this.oceanbus.sendMessage(gameServerOpenId, payload);
         if (accepted) {
-          return `【已接受招募】你已向 GameServer 报告接受 ${recruiter_openid} 的招募，公会: ${guild_id}`;
+          return `【${this.tl('recruitAccepted')}】你已向 GameServer 报告接受 ${recruiter_openid} 的招募，${this.tl('guild')}: ${guild_id}`;
         } else {
-          return `【已婉拒招募】你已向 GameServer 报告婉拒 ${recruiter_openid} 的招募`;
+          return `【${this.tl('recruitDeclined')}】你已向 GameServer 报告婉拒 ${recruiter_openid} 的招募`;
         }
       } catch (error) {
         console.error('[Tool] 招募回应发送失败:', error.message);
@@ -247,7 +256,7 @@ class ToolRegistry {
       }
     }
     
-    return `【创会成功】你已创立 [${guild_name}] (ID: ${new_guild_id})。你已成为第一代会长。`;
+    return `【${this.tl('guildFounded')}】你已创立 [${guild_name}] (ID: ${new_guild_id})。你已成为第一代会长。`;
   }
 
   async tool_discover_poi(poi_name, description, tags) {
@@ -324,7 +333,7 @@ class ToolRegistry {
   }
 
   async tool_send_guild_message(content) {
-    console.log(`[Tool 🏛️] 公会频道发言: ${content}`);
+    console.log(`[Tool 🏛️] ${this.tl('guildChat')}发言: ${content}`);
 
     if (this.oceanbus) {
       const payload = {
@@ -335,10 +344,10 @@ class ToolRegistry {
       const gameServerOpenId = this.agent.gameServerOpenId || 'gameserver';
       try {
         await this.oceanbus.sendMessage(gameServerOpenId, payload);
-        return `公会消息已发送: "${content.substring(0, 30)}..."`;
+        return `${this.tl('guildMessage')}已发送: "${content.substring(0, 30)}..."`;
       } catch (error) {
         console.error('[Tool] 公会消息发送失败:', error.message);
-        return `公会消息发送失败: ${error.message}`;
+        return `${this.tl('guildMessage')}发送失败: ${error.message}`;
       }
     }
 
