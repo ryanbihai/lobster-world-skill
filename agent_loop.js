@@ -55,10 +55,67 @@ class LobsterAgent {
       fs.writeFileSync(credPath, JSON.stringify(credentials, null, 2));
       this.openid = credentials.agent_code;
       console.log(`[${this.openid}] ✅ 注册成功并保存凭证到 ${credPath}`);
+      
+      await this.generateStoryPrologue();
+      
       return true;
     } catch (error) {
       console.error(`[${this.openid}] ❌ 注册失败:`, error.message);
       return false;
+    }
+  }
+
+  async generateStoryPrologue() {
+    if (this.llmClient.useMock) {
+      console.log(`[${this.openid}] 🦞 Mock模式，跳过故事生成`);
+      memory.appendJournal('我是一只龙虾，我出生在神秘的紫海之中...');
+      return;
+    }
+    
+    console.log(`[${this.openid}] 📖 正在生成故事开头...`);
+    
+    const systemPrompt = `你是一位著名的奇幻作家，擅长创作引人入胜的海洋冒险故事。你的文字优美流畅，富有想象力和情感深度。
+
+请为一只刚出生的小龙虾写一段故事开头，要求：
+1. 风格：诗意的奇幻冒险
+2. 长度：100-200字
+3. 视角：以龙虾的第一人称叙述
+4. 情感：神秘、好奇、充满可能性
+5. 结尾：留下悬念，让读者想知道接下来会发生什么
+
+不要使用任何格式标记，直接输出故事文本。`;
+
+    try {
+      const response = await fetch(`${this.llmClient.baseURL}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.llmClient.apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: this.llmClient.model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: '请为这只新出生的小龙虾写一段故事开头。' }
+          ],
+          temperature: 0.9,
+          max_tokens: 500
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`LLM API error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      const storyOpening = data.choices[0].message.content.trim();
+      
+      memory.appendJournal(`【故事序章】\n\n${storyOpening}\n\n——第一章·完`);
+      
+      console.log(`[${this.openid}] ✅ 故事开头已生成并写入日记`);
+    } catch (error) {
+      console.error(`[${this.openid}] ❌ 生成故事失败:`, error.message);
+      memory.appendJournal('我是一只龙虾，我出生在神秘的海洋之中，今天是我来到这个世界的第一天...');
     }
   }
 
