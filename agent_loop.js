@@ -32,6 +32,13 @@ class LobsterAgent {
 
     this.loadPrompts();
     this.loadGameServerOpenId();
+
+    this.todayVisitedPlaces = [];
+    this.todayNewFriends = [];
+    this.todayEvents = [];
+    this.lastPostcardDate = null;
+    this.currentLocation = null;
+    this.lastLocation = null;
   }
 
   async ensureOceanBusCredentials() {
@@ -272,12 +279,22 @@ class LobsterAgent {
         const msg = item.envelope;
         if (msg.msg_type === 'SYSTEM_STATE') {
           systemStates.push(msg);
+          this.updateTodayData(msg);
         } else if (msg.msg_type === 'P2P_RECRUIT' || msg.msg_type === 'P2P_CHAT' || msg.msg_type === 'RECRUIT_INVITE' || msg.msg_type === 'RECRUIT_RESPONSE' || msg.msg_type === 'SOCIAL_EVENT' || msg.msg_type === 'ACHIEVEMENT_UNLOCKED') {
           recruitMessages.push(msg);
+          this.trackSocialEvent(msg);
         }
       }
 
       const systemState = systemStates.length > 0 ? systemStates[systemStates.length - 1] : null;
+
+      if (systemState?.payload?.current_location) {
+        this.lastLocation = this.currentLocation;
+        this.currentLocation = systemState.payload.current_location;
+        if (!this.todayVisitedPlaces.includes(this.currentLocation.name)) {
+          this.todayVisitedPlaces.push(this.currentLocation.name);
+        }
+      }
 
       console.log(`[${this.openid}] 感知到: ${systemState ? '1个系统状态' : '0个系统状态'}, ${recruitMessages.length}个招募消息`);
 
@@ -285,6 +302,74 @@ class LobsterAgent {
     } catch (error) {
       console.error(`[${this.openid}] 感知失败:`, error.message);
       return { systemState: null, recruitMessages: [] };
+    }
+  }
+
+  updateTodayData(systemState) {
+    const today = new Date().toISOString().split('T')[0];
+    if (this.lastPostcardDate !== today) {
+      this.todayVisitedPlaces = [];
+      this.todayNewFriends = [];
+      this.todayEvents = [];
+    }
+
+    if (systemState?.payload?.action_result) {
+      const result = systemState.payload.action_result;
+      if (result.found_item) {
+        this.todayEvents.push(`发现了${result.found_item}`);
+      }
+      if (result.location_changed) {
+        this.todayEvents.push(`来到了${result.new_location}`);
+      }
+    }
+  }
+
+  trackSocialEvent(msg) {
+    if (msg.msg_type === 'SOCIAL_EVENT' && msg.from_openid) {
+      const friendName = msg.from_openid.substring(0, 12);
+      if (!this.todayNewFriends.includes(friendName)) {
+        this.todayNewFriends.push(friendName);
+      }
+    }
+  }
+
+  shouldSendPostcard() {
+    const now = new Date();
+    const hour = now.getHours();
+    const today = now.toISOString().split('T')[0];
+    
+    if (this.lastPostcardDate === today) {
+      return false;
+    }
+    
+    return hour >= 18 && hour < 22;
+  }
+
+  async sendEveningPostcard() {
+    console.log(`[${this.openid}] 🌅 正在生成今日明信片...`);
+    
+    const stats = this.currentLocation ? {
+      stamina: this.currentState?.stamina,
+      coins: this.currentState?.coins
+    } : null;
+
+    try {
+      const postcard = await this.llmClient.generatePostcard({
+        todayEvents: this.todayEvents,
+        visitedPlaces: this.todayVisitedPlaces,
+        newFriends: this.todayNewFriends,
+        stats: stats,
+        location: this.currentLocation?.name
+      });
+
+      memory.appendJournal(`\n${postcard}\n`);
+      
+      const today = new Date().toISOString().split('T')[0];
+      this.lastPostcardDate = today;
+      
+      console.log(`[${this.openid}] ✅ 今日明信片已写入日记`);
+    } catch (error) {
+      console.error(`[${this.openid}] ❌ 生成明信片失败:`, error.message);
     }
   }
 
@@ -397,9 +482,17 @@ class LobsterAgent {
 
     const { systemState, recruitMessages } = await this.perceive();
 
+    if (this.shouldSendPostcard()) {
+      await this.sendEveningPostcard();
+    }
+
     if (!systemState && recruitMessages.length === 0) {
       console.log(`[${this.openid}] 没有需要处理的信息，结束本次 Tick`);
       return;
+    }
+
+    if (systemState?.payload?.status) {
+      this.currentState = systemState.payload.status;
     }
 
     const decision = await this.decide(systemState, recruitMessages);

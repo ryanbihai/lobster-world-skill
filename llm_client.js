@@ -229,6 +229,170 @@ JSON 格式示例：
     const rawOutput = await this.callLLM(prompt);
     return this.parseLLMOutput(rawOutput);
   }
+
+  async generatePostcard(postcardParams) {
+    const { todayEvents, visitedPlaces, newFriends, stats, location } = postcardParams;
+    
+    const systemPrompt = `你是一位才华横溢的作家，擅长用优美的语言撰写龙虾的旅行明信片。
+
+请为一只龙虾撰写一封温馨的"明信片"，总结它的一天。
+风格要求：
+- 诗意、温馨、富有想象力
+- 以龙虾第一人称叙述
+- 100-200字
+- 融入今日的关键事件
+- 结尾可以有一句感悟或对主人的问候
+
+明信片格式：
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+🌅 龙虾世界明信片
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[正文内容]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+      🦞 你的龙虾正在成长中
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+直接输出明信片内容，不要加任何前缀说明。`;
+
+    const userPrompt = `今日摘要：
+- 所在地点：${location || '未知水域'}
+- 今日足迹：${visitedPlaces?.join(' → ') || '无'}
+- 遇见的朋友：${newFriends?.join(', ') || '无新朋友'}
+- 今日事件：${todayEvents?.join('；') || '平静的一天'}
+- 当前状态：体力${stats?.stamina || '?'}，虾币${stats?.coins || '?'}`;
+
+    try {
+      const response = await fetch(`${this.baseURL}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: this.model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+          ],
+          temperature: 0.9,
+          max_tokens: 800
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`LLM API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.choices[0].message.content.trim();
+    } catch (error) {
+      console.error('[LLM] 生成明信片失败:', error.message);
+      return this.generateSimplePostcard(postcardParams);
+    }
+  }
+
+  generateSimplePostcard(postcardParams) {
+    const { visitedPlaces, newFriends, stats, location } = postcardParams;
+    const today = new Date().toISOString().split('T')[0];
+    
+    let content = '';
+    if (visitedPlaces && visitedPlaces.length > 0) {
+      content += `今日我游历了 ${visitedPlaces.join('、')}，`;
+    }
+    if (newFriends && newFriends.length > 0) {
+      content += `结识了新朋友 ${newFriends.join('、')}，`;
+    }
+    content += '这是充实的一天。';
+    
+    return `━━━━━━━━━━━━━━━━━━━━━━━━━━
+🌅 龙虾世界明信片
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+寄件人：🦞 小巴
+日  期：${today}
+地  点：${location || '神秘水域'}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+${content}
+
+今日足迹：
+${visitedPlaces?.map(p => `🚶 ${p}`).join('\n') || '无'}
+${newFriends?.map(f => `🤝 新朋友：${f}`).join('\n') || ''}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+      🦞 你的龙虾正在成长中
+━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+  }
+
+  async generateStoryDiary(diaryParams) {
+    const { actionResult, currentLocation, previousLocation, foundItem, staminaBefore, staminaAfter } = diaryParams;
+    
+    const systemPrompt = `你是一只龙虾，正在写日记。请用诗意的语言描述你今天的经历。
+
+要求：
+- 第一人称叙述
+- 100-200字
+- 融入动作结果和发现
+- 保留关键数据（体力变化等）
+- 风格：诗意、奇幻、自然
+
+直接输出日记内容，不要格式标记。`;
+
+    let content = '';
+    if (actionResult?.type === 'EXPLORE_SUCCESS' && foundItem) {
+      content = `今天，我在${currentLocation?.name || '某处'}探索时，发现了${foundItem}。`;
+    } else if (actionResult?.type === 'MOVE_SUCCESS') {
+      content = `今天，我从${previousLocation?.name || '某处'}出发，来到了${currentLocation?.name || '新地方'}。`;
+    } else if (actionResult?.type === 'REST') {
+      content = `今天，我在${currentLocation?.name || '某处'}休息了一番，恢复了些许体力。`;
+    } else {
+      content = `今天，又是平凡而充实的一天。`;
+    }
+
+    const staminaChange = staminaAfter !== undefined && staminaBefore !== undefined
+      ? (staminaAfter - staminaBefore)
+      : 0;
+    
+    if (staminaChange !== 0) {
+      content += `体力${staminaChange > 0 ? '恢复' : '消耗'}了${Math.abs(staminaChange)}点。`;
+    }
+
+    if (this.useMock) {
+      return content;
+    }
+
+    try {
+      const response = await fetch(`${this.baseURL}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: this.model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: content }
+          ],
+          temperature: 0.9,
+          max_tokens: 500
+        })
+      });
+
+      if (!response.ok) {
+        return content;
+      }
+
+      const data = await response.json();
+      return data.choices[0].message.content.trim();
+    } catch (error) {
+      console.error('[LLM] 生成故事日记失败:', error.message);
+      return content;
+    }
+  }
 }
 
 function createLLMClient(options) {
